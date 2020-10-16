@@ -10,7 +10,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url='http://github.com/eliep/i3-layouts',
-    author='Elie',
+    author='eliep',
     author_email='eprudhomme@gmail.com',
     license='MIT',
     packages=setuptools.find_packages(),

@@ -103,46 +103,46 @@ These parameters must be given is the order described below.
 #### vstack
 
 Parameters:
-* main stack ratio (float between `0` and `1`, default `0.5`): ratio of screen width used 
+* **main stack ratio** (float between `0` and `1`, default `0.5`): ratio of screen width used 
 by the main stack
-* secondary stack position (`right` or `left`, default `right`): vertical stack position 
+* **secondary stack position** (`right` or `left`, default `right`): vertical stack position 
 relative to the main stack
 
 #### hstack
 
 Parameters:
-* main stack ratio (float between `0` and `1`, default `0.5`): ratio of screen height used 
+* **main stack ratio** (float between `0` and `1`, default `0.5`): ratio of screen height used 
 by the main stack
-* secondary stack position (`top` or `bottom`, default `bottom`): horizontal stack position 
+* **secondary stack position** (`top` or `bottom`, default `bottom`): horizontal stack position 
 relative to the main stack
 
 #### spiral
 
-* split ratio (default `0.5`): ratio of width or height used by the previous container 
+* **split ratio** (default `0.5`): ratio of width or height used by the previous container 
 at each split, the remaining is used by the new container.
 
 #### 3columns
 
-* main stack ratio [two columns] (float between `0` and `1`, default `0.5`): 
+* **main stack ratio** [two columns] (float between `0` and `1`, default `0.5`): 
 ratio of screen width used by the main stack when only two columns are present
-* main stack ratio [three columns] (float between `0` and `1`, default `0.5`): 
+* **main stack ratio** [three columns] (float between `0` and `1`, default `0.5`): 
 ratio of screen width used by the main stack when three columns are present. Width left
 is distributed equally between the second and third columns
-* max number of row in the second columns (int, default `0`): 
+* **max number of row in the second columns** (int, default `0`): 
 the third columns is created only when the second column reach this number of container. 
 If `0` is given new container position alternate between the second and third columns.
-* second columns position (`right` or `left`, default `right`): second column position 
+* **second columns position** (`right` or `left`, default `right`): second column position 
 relative to the main stack. Note that the third column will have the opposite position 
 (if the second columns is on the left of the main stack, the third one will be on the right of 
 the main stack)
 
 ## Limitations
 
-* User split and move: `i3-layouts` do its best to manage the workspace layout, but if you manually 
+* **User actions (split and move)**: `i3-layouts` do its best to manage the workspace layout, but if you manually 
 split or move a container (with `split vertical|horizontal` for example), 
 new container may be misplaced.
-* Redraw: when container are closed, or moved between workspace, `i3-layouts` needs to reposition
+* **Redraw**: when container are closed, or moved between workspace, `i3-layouts` needs to reposition
 some if not all containers of a given workspace. Right now, `i3-layouts` use `xdotool` 
 to simulate the recreation of these containers, which is not ideal.
-* Marks: to keep track of container position, `i3-layouts` use i3wm marks. 
+* **Marks**: to keep track of container position, `i3-layouts` use i3wm marks. 
 More precisely, `i3-layouts` marks the first and last container of each workspace. 

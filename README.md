@@ -5,11 +5,15 @@
 `i3-layouts` is a small program that enforces configurable dynamic layout on i3 workspace.
 
 `i3-layouts` comes with 4 layouts: 
-- `vstack`: one main windows with a vertical stack of windows. 
+- `vstack`: one main windows with a vertical stack of windows.
+![vstack](./img/vstack.png)
 - `hstack`: one main windows with an horizontal stack of windows.
+![hstack](./img/hstack.png)
 - `spiral`: each new windows split the previous one, split direction alternates between
 horizontal and vertical.  
+![spiral](./img/spiral.png)
 - `3columns`: one main widows with two vertical stack of windows.
+![3columns](./img/3columns.png)
 
 The [Layout section](#layouts) details the parameters for each one of these layouts. 
 

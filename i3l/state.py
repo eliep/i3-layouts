@@ -70,6 +70,9 @@ class State:
         self.context = Context(i3l, workspace, focused, containers, state)
         return self.context
 
+    def get_workspace_sequence(self, workspace_name: str) -> Optional[WorkspaceSequence]:
+        return self.workspace_sequences[workspace_name] if workspace_name in self.workspace_sequences else None
+
     def add_workspace_sequence(self, workspace_name: str) -> WorkspaceSequence:
         if workspace_name not in self.workspace_sequences:
             state = WorkspaceSequence()
@@ -80,6 +83,3 @@ class State:
                 self.workspace_sequences[workspace_name].set_stale(True)
         self.context.workspace_sequence = self.workspace_sequences[workspace_name]
         return self.workspace_sequences[workspace_name]
-
-    def get_workspace_sequence(self, workspace_name: str) -> Optional[WorkspaceSequence]:
-        return self.workspace_sequences[workspace_name] if workspace_name in self.workspace_sequences else None

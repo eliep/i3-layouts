@@ -48,34 +48,34 @@ class Stack(Layout):
         super().__init__(layout_name, workspace_name)
         try:
             self.main_ratio = float(params[0]) if len(params) > 0 else 0.5
-            self.second_axe_position = params[1] if len(params) > 1 else self.default_second_axe_position()
+            self.second_axe_position = params[1] if len(params) > 1 else self._default_second_axe_position()
         except ValueError:
             self.main_ratio = 0.5
-            self.second_axe_position = self.default_second_axe_position()
+            self.second_axe_position = self._default_second_axe_position()
 
     def anchor_mark(self) -> str:
         return self.mark_last()
 
     def _update(self, context: Context):
         if len(context.containers) == 1:
-            context.exec(f'split {self.first_direction()}')
+            context.exec(f'split {self._first_direction()}')
         elif len(context.containers) == 2:
             context.exec(f'move {self.second_axe_position}')
             size = context.workspace_width(1 - self.main_ratio) \
-                if self.resize_direction() == 'width' else context.workspace_height(1 - self.main_ratio)
-            context.exec(f'resize set {self.resize_direction()} {size}')
-            context.exec(f'split {self.second_direction()}')
+                if self._resize_direction() == 'width' else context.workspace_height(1 - self.main_ratio)
+            context.exec(f'resize set {self._resize_direction()} {size}')
+            context.exec(f'split {self._second_direction()}')
 
-    def first_direction(self):
+    def _first_direction(self):
         pass
 
-    def second_direction(self):
+    def _second_direction(self):
         pass
 
-    def resize_direction(self):
+    def _resize_direction(self):
         pass
 
-    def default_second_axe_position(self):
+    def _default_second_axe_position(self):
         pass
 
 
@@ -84,16 +84,16 @@ class VStack(Stack):
     def __init__(self, workspace_name: str, params: List[Any]):
         super().__init__('vstack', workspace_name, params)
 
-    def first_direction(self):
+    def _first_direction(self):
         return 'horizontal'
 
-    def second_direction(self):
+    def _second_direction(self):
         return 'vertical'
 
-    def resize_direction(self):
+    def _resize_direction(self):
         return 'width'
 
-    def default_second_axe_position(self):
+    def _default_second_axe_position(self):
         return 'right'
 
 
@@ -102,16 +102,16 @@ class HStack(Stack):
     def __init__(self, workspace_name: str, params: List[Any]):
         super().__init__('hstack', workspace_name, params)
 
-    def first_direction(self):
+    def _first_direction(self):
         return 'vertical'
 
-    def second_direction(self):
+    def _second_direction(self):
         return 'horizontal'
 
-    def resize_direction(self):
+    def _resize_direction(self):
         return 'height'
 
-    def default_second_axe_position(self):
+    def _default_second_axe_position(self):
         return 'up'
 
 
@@ -157,20 +157,12 @@ class ThreeColumns(Layout):
     def anchor_mark(self) -> str:
         return self.mark_main()
 
-    def move_to_column(self, context: Context, column: str):
-        if (self.second_column_position == 'right' and column == 'second') or \
-                (self.second_column_position == 'left' and column == 'third'):
-            context.exec('move right')
-        else:
-            context.exec('move left')
-            context.exec('move left')
-
     def _update(self, context: Context):
         if (self.second_column_max == 0 and len(context.containers) % 2 == 0) or \
                 self.second_column_max < len(context.containers) - 1:
-            self.move_to_column(context, 'second')
+            self._move_to_column(context, 'second')
         else:
-            self.move_to_column(context, 'third')
+            self._move_to_column(context, 'third')
 
         third_column_container_index = 3 if self.second_column_max == 0 else self.second_column_max + 2
         if len(context.containers) == 1:
@@ -185,6 +177,14 @@ class ThreeColumns(Layout):
             main_width = context.workspace_width(self.three_columns_main_ratio)
             context.exec(f'resize set {context.workspace_width(self.three_columns_main_ratio / 2)}')
             context.exec(f'[con_mark="{self.mark_main()}"] resize set {main_width}')
+
+    def _move_to_column(self, context: Context, column: str):
+        if (self.second_column_position == 'right' and column == 'second') or \
+                (self.second_column_position == 'left' and column == 'third'):
+            context.exec('move right')
+        else:
+            context.exec('move left')
+            context.exec('move left')
 
 
 class Layouts:

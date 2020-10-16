@@ -4,7 +4,7 @@
 
 `i3-layouts` is a small program that enforces configurable dynamic layout on i3 workspace.
 
-`i3-layouts` comes with 4 layouts: 
+`i3-layouts` comes with 4 configurable layouts: 
 - `vstack`: one main windows with a vertical stack of windows.
 ![vstack](./img/vstack.png)
 - `hstack`: one main windows with an horizontal stack of windows.
@@ -12,7 +12,7 @@
 - `spiral`: each new windows split the previous one, split direction alternates between
 horizontal and vertical.  
 ![spiral](./img/spiral.png)
-- `3columns`: one main widows with two vertical stack of windows.
+- `3columns`: one main widows with two vertical stacks of windows.
 ![3columns](./img/3columns.png)
 
 The [Layout section](#layouts) details the parameters for each one of these layouts. 
@@ -46,14 +46,14 @@ exec i3-layouts
 Configuration is done directly in the i3 config file (usually `$HOME/.config/i3/config`).
 
 `i3-layouts` reads the entire config file, filter all `$i3l` variables and 
-keeps the associated values as configuration. If user defined variables are used
-in `$i3l` variables value, they will be replaced by their own value.
+keeps the associated values as configuration. Note that user defined variables can be used
+in `$i3l` variables, as they will be replaced by their own value.
 
 ### Assigning a layout to a workspace
 Use the name of the layout as value for the `$i3l` variable, followed by its parameters and 
 then the targeted workspace name.
 
-Note that parameters are optional, but if given, they must respect the order described 
+Note that parameters are optional. However, if given, they must respect the order described 
 in the [Layouts](#layouts) section.
 
 **Syntax:**
@@ -82,7 +82,7 @@ followed by one of the layout name or `none`:
 
 - If a layout name is given, and windows are already present, 
 they will be rearranged to match the selected layout.   
-- If `none` is given, `i3-layouts` will not manage this workspace layout anymore.  
+- If `none` is given, `i3-layouts` will stop managing this workspace layout.  
 
 **Syntax:**
 
@@ -108,7 +108,6 @@ These parameters must be given is the order described below.
 
 #### vstack
 
-Parameters:
 * **main stack ratio** (float between `0` and `1`, default `0.5`): ratio of screen width used 
 by the main stack
 * **secondary stack position** (`right` or `left`, default `right`): vertical stack position 
@@ -116,7 +115,6 @@ relative to the main stack
 
 #### hstack
 
-Parameters:
 * **main stack ratio** (float between `0` and `1`, default `0.5`): ratio of screen height used 
 by the main stack
 * **secondary stack position** (`top` or `bottom`, default `bottom`): horizontal stack position 

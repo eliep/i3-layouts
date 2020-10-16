@@ -1,10 +1,14 @@
 from i3ipc import Connection, TickEvent
 from i3ipc.events import WorkspaceEvent, WindowEvent
+import logging
 import shlex
 import subprocess
 
 from i3l.state import State
 from i3l.layouts import Layouts, Layout
+
+
+logger = logging.getLogger(__name__)
 
 
 def xdo_unmap_window(window_id):
@@ -40,6 +44,7 @@ def redraw_workspace(state: State, layout: Layout, con_id: int = 0):
 def on_tick(layouts: Layouts, state: State):
 
     def _on_tick(i3l: Connection, e: TickEvent):
+        logger.debug(f'[ipc] tick event {e.payload}')
         if not e.payload.startswith('i3-layouts'):
             return
         context = state.sync_context(i3l)
@@ -58,6 +63,7 @@ def on_tick(layouts: Layouts, state: State):
 def on_workspace_focus(layouts: Layouts, state: State):
 
     def _on_workspace_focus(i3l: Connection, e: WorkspaceEvent):
+        logger.debug(f'[ipc] workspace focus event current:{e.current.name}, old:{e.old.name if e.old else ""}')
         context = state.sync_context(i3l)
         if layouts.exists_for(e.current.name):
             sequence = state.add_workspace_sequence(e.current.name)
@@ -77,6 +83,7 @@ def on_workspace_focus(layouts: Layouts, state: State):
 def on_window_close(layouts: Layouts, state: State):
 
     def _on_window_close(i3l: Connection, e: WindowEvent):
+        logger.debug(f'[ipc] window close event container:{e.container.id}')
         context = state.sync_context(i3l)
         if not layouts.exists_for(context.workspace.name):
             return
@@ -92,6 +99,7 @@ def on_window_close(layouts: Layouts, state: State):
 def on_window_move(layouts: Layouts, state: State):
 
     def _on_window_move(i3l: Connection, e: WindowEvent):
+        logger.debug(f'[ipc] window move event container:{e.container.id}')
         context = state.sync_context(i3l)
         if context.contains_container(e.container.id) or e.container.type != 'con':
             return
@@ -109,6 +117,7 @@ def on_window_move(layouts: Layouts, state: State):
 def on_window_new(layouts: Layouts, state: State):
 
     def _on_window_new(i3l: Connection, e: WindowEvent):
+        logger.debug(f'[ipc] window new event container:{e.container.id}')
         context = state.sync_context(i3l)
         if not layouts.exists_for(context.workspace.name):
             return

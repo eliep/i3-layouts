@@ -1,3 +1,7 @@
+import argparse
+import logging
+import sys
+
 from i3ipc import Connection, Event
 
 from i3l.config import WorkspaceLayout
@@ -7,6 +11,14 @@ from i3l.layouts import Layouts, Layout
 
 
 def connect():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--debug', action='store_true')
+    args = parser.parse_args()
+    log_level = logging.DEBUG if args.debug else logging.INFO
+
+    logging.basicConfig(stream=sys.stdout,
+                        format='[%(asctime)s] %(levelname)s {%(filename)s:%(lineno)d} - %(message)s',
+                        level=log_level)
     i3 = Connection()
 
     i3_config = i3.get_config()

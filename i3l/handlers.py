@@ -37,6 +37,8 @@ def redraw_workspace(state: State, layout: Layout, con_id: int = 0):
                 state.containers_closed.append(container_window_id)
             container_window_id = state.containers_to_redraw.pop(0)
             xdo_map_window(container_window_id)
+        elif len(containers) == 1:
+            state.context.exec(f'[con_id="{containers[-1].id}"] mark {layout.mark_main()}')
         else:
             state.context.exec(f'[con_id="{containers[-1].id}"] mark {layout.mark_last()}')
 

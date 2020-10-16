@@ -159,7 +159,7 @@ class ThreeColumns(Layout):
 
     def _update(self, context: Context):
         if (self.second_column_max == 0 and len(context.containers) % 2 == 0) or \
-                self.second_column_max < len(context.containers) - 1:
+                len(context.containers) - 1 <= self.second_column_max:
             self._move_to_column(context, 'second')
         else:
             self._move_to_column(context, 'third')

@@ -77,9 +77,10 @@ class State:
         if workspace_name not in self.workspace_sequences:
             state = WorkspaceSequence()
             self.workspace_sequences[workspace_name] = state
-        for container in self.context.containers:
-            if container.id not in self.workspace_sequences[workspace_name].window_numbers:
-                self.workspace_sequences[workspace_name].assign_number(container)
-                self.workspace_sequences[workspace_name].set_stale(True)
+        if self.context.workspace.name == workspace_name:
+            for container in self.context.containers:
+                if container.id not in self.workspace_sequences[workspace_name].window_numbers:
+                    self.workspace_sequences[workspace_name].assign_number(container)
+                    self.workspace_sequences[workspace_name].set_stale(True)
         self.context.workspace_sequence = self.workspace_sequences[workspace_name]
         return self.workspace_sequences[workspace_name]

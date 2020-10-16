@@ -175,8 +175,12 @@ class ThreeColumns(Layout):
             context.exec(f'[con_mark="{self.mark_main()}"] resize set {main_width}')
         elif len(context.containers) == third_column_container_index:
             main_width = context.workspace_width(self.three_columns_main_ratio)
-            context.exec(f'resize set {context.workspace_width(self.three_columns_main_ratio / 2)}')
             context.exec(f'[con_mark="{self.mark_main()}"] resize set {main_width}')
+            for container in context.containers:
+                print(container.id, container.marks)
+                if self.mark_main() not in container.marks:
+                    print(f'[con_id="{container.id}"] resize set {context.workspace_width(self.three_columns_main_ratio / 2)}')
+                    context.exec(f'[con_id="{container.id}"] resize set {context.workspace_width(self.three_columns_main_ratio / 2)}')
 
     def _move_to_column(self, context: Context, column: str):
         if (self.second_column_position == 'right' and column == 'second') or \

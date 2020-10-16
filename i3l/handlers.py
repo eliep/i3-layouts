@@ -40,7 +40,6 @@ def redraw_workspace(state: State, layout: Layout, con_id: int = 0):
 def on_tick(layouts: Layouts, state: State):
 
     def _on_tick(i3l: Connection, e: TickEvent):
-        print('on_tick', e.ipc_data)
         if not e.payload.startswith('i3-layouts'):
             return
         context = state.sync_context(i3l)
@@ -59,7 +58,6 @@ def on_tick(layouts: Layouts, state: State):
 def on_workspace_focus(layouts: Layouts, state: State):
 
     def _on_workspace_focus(i3l: Connection, e: WorkspaceEvent):
-        print('on_workspace_focus', e.current.name, e.old.name if e.old else -1, e.ipc_data)
         context = state.sync_context(i3l)
         if layouts.exists_for(e.current.name):
             sequence = state.add_workspace_sequence(e.current.name)
@@ -79,7 +77,6 @@ def on_workspace_focus(layouts: Layouts, state: State):
 def on_window_close(layouts: Layouts, state: State):
 
     def _on_window_close(i3l: Connection, e: WindowEvent):
-        print('on_window_close', e.ipc_data)
         context = state.sync_context(i3l)
         if not layouts.exists_for(context.workspace.name):
             return
@@ -95,7 +92,6 @@ def on_window_close(layouts: Layouts, state: State):
 def on_window_move(layouts: Layouts, state: State):
 
     def _on_window_move(i3l: Connection, e: WindowEvent):
-        print('on_window_move', e.ipc_data)
         context = state.sync_context(i3l)
         if context.contains_container(e.container.id) or e.container.type != 'con':
             return
@@ -114,7 +110,6 @@ def on_window_new(layouts: Layouts, state: State):
 
     def _on_window_new(i3l: Connection, e: WindowEvent):
         context = state.sync_context(i3l)
-        print('on_window_new', context.workspace.name, e.ipc_data)
         if not layouts.exists_for(context.workspace.name):
             return
         if context.workspace_sequence is None:

@@ -1,7 +1,10 @@
+import logging
 import re
 from typing import List, Optional
 
 from i3ipc import ConfigReply
+
+logger = logging.getLogger(__name__)
 
 
 class Variable:
@@ -55,4 +58,6 @@ class WorkspaceLayout:
                 workspace_name = match.group(3)
                 return WorkspaceLayout(layout_name, layout_params, workspace_name)
             except IndexError:
+                logger.error(f'[config] Invalid workspace layout definition: {i3l_option}')
                 return None
+        return None

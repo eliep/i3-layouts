@@ -44,7 +44,7 @@ def redraw_workspace(state: State, layout: Layout, con_id: int = 0):
 def on_tick(layouts: Layouts, state: State):
 
     def _on_tick(i3l: Connection, e: TickEvent):
-        logger.debug(f'[ipc] tick event {e.payload}')
+        logger.debug(f'[ipc] tick event - payload:{e.payload}')
         if not e.payload.startswith('i3-layouts'):
             return
         context = state.sync_context(i3l)
@@ -52,10 +52,12 @@ def on_tick(layouts: Layouts, state: State):
         layout_name = tokens[1]
         layout_params = tokens[2:]
         if layout_name != 'none':
+            logger.debug(f'[ipc] tick event - redraw workspace')
             layout = layouts.add(Layout.create(layout_name, layout_params, context.workspace.name))
             state.add_workspace_sequence(context.workspace.name)
             redraw_workspace(state, layout)
         else:
+            logger.debug(f'[ipc] tick event - removing workspace layout')
             layouts.remove(context.workspace.name)
     return _on_tick
 
@@ -63,11 +65,12 @@ def on_tick(layouts: Layouts, state: State):
 def on_workspace_focus(layouts: Layouts, state: State):
 
     def _on_workspace_focus(i3l: Connection, e: WorkspaceEvent):
-        logger.debug(f'[ipc] workspace focus event current:{e.current.name}, old:{e.old.name if e.old else ""}')
+        logger.debug(f'[ipc] workspace focus event - workspace:{e.current.name}, old:{e.old.name if e.old else "none"}')
         context = state.sync_context(i3l)
         if layouts.exists_for(e.current.name):
             sequence = state.add_workspace_sequence(e.current.name)
             if state.prev_workspace_name != e.current.name and sequence.is_stale:
+                logger.debug(f'[ipc] workspace focus event - redraw workspace')
                 layout = layouts.get(context.workspace.name)
                 redraw_workspace(state, layout, sequence.stale_con_id)
                 sequence.set_stale(False)
@@ -83,13 +86,15 @@ def on_workspace_focus(layouts: Layouts, state: State):
 def on_window_close(layouts: Layouts, state: State):
 
     def _on_window_close(i3l: Connection, e: WindowEvent):
-        logger.debug(f'[ipc] window close event container:{e.container.id}')
+        logger.debug(f'[ipc] window close event - container:{e.container.id}')
         context = state.sync_context(i3l)
         if not layouts.exists_for(context.workspace.name):
+            logger.debug(f'[ipc] window close event - no workspace layout')
             return
         if e.container.window in state.containers_closed:
             state.containers_closed.remove(e.container.window)
             return
+        logger.debug(f'[ipc] window close event - redraw workspace')
         layout = layouts.get(context.workspace.name)
         redraw_workspace(state, layout, e.container.id)
 
@@ -99,15 +104,17 @@ def on_window_close(layouts: Layouts, state: State):
 def on_window_move(layouts: Layouts, state: State):
 
     def _on_window_move(i3l: Connection, e: WindowEvent):
-        logger.debug(f'[ipc] window move event container:{e.container.id}')
+        logger.debug(f'[ipc] window move event - container:{e.container.id}')
         context = state.sync_context(i3l)
         if context.contains_container(e.container.id) or e.container.type != 'con':
+            logger.debug(f'[ipc] window move event - inside workspace')
             return
         if layouts.exists_for(state.old_workspace_name):
             sequence = state.get_workspace_sequence(state.old_workspace_name)
             sequence.assign_number(e.container)
             sequence.set_stale(True, e.container.id)
         if layouts.exists_for(context.workspace.name):
+            logger.debug(f'[ipc] window move event - redraw workspace')
             layout = layouts.get(context.workspace.name)
             redraw_workspace(state, layout, e.container.id)
 
@@ -117,14 +124,14 @@ def on_window_move(layouts: Layouts, state: State):
 def on_window_new(layouts: Layouts, state: State):
 
     def _on_window_new(i3l: Connection, e: WindowEvent):
-        logger.debug(f'[ipc] window new event container:{e.container.id}')
+        logger.debug(f'[ipc] window new event - container:{e.container.id}')
         context = state.sync_context(i3l)
-        if not layouts.exists_for(context.workspace.name):
-            return
-        if context.workspace_sequence is None:
+        if not layouts.exists_for(context.workspace.name) or context.workspace_sequence is None:
+            logger.debug(f'[ipc] window new event - no workspace layout')
             return
         context.workspace_sequence.assign_number(e.container)
 
+        logger.debug(f'[ipc] window new event - update layout')
         layout = layouts.get(context.workspace.name)
         layout.update(context, e.container)
 

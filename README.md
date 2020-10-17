@@ -122,7 +122,7 @@ One main windows with an horizontal stack of windows.
 
 * **main stack ratio** (float between `0` and `1`, default `0.5`): ratio of screen height used 
 by the main stack
-* **secondary stack position** (`top` or `bottom`, default `bottom`): horizontal stack position 
+* **secondary stack position** (`up` or `down`, default `down`): horizontal stack position 
 relative to the main stack
 
 #### spiral
@@ -132,7 +132,7 @@ horizontal and vertical.
 * **split ratio** (float between `0` and `1`, default `0.5`): 
 ratio of width or height used by the previous container at each split, 
 the remaining is used by the new container.
-* **spiral direction** (`inside` or `outside`, default `inside`): 
+* **screen direction** (`inside` or `outside`, default `inside`): 
 whether new container should be added towards the inside of the screen or the outside.
 
 #### 3columns
@@ -158,9 +158,9 @@ Each columns is made of one main window and one smaller window (called companion
 ratio of screen height used by the companion container for odd column index
 * **even companion ratio** (float between `0` and `1`, default `0.3`): 
 ratio of screen height used by the companion container for even column index
-* **companion position** (`top`, `bottom`, `alt-top`, `alt-bottom`, default `top`): 
-position of the companion container relative to the main window. `alt-top` and `alt-bottom`
-alternate this position for each column, starting respectively at `top` and `bottom` for
+* **companion position** (`up`, `down`, `alt-up`, `alt-down`, default `up`): 
+position of the companion container relative to the main window. `alt-up` and `alt-down`
+alternate this position for each column, starting respectively at `up` and `down` for
 the first column.
 
 ## Limitations

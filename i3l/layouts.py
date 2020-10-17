@@ -1,8 +1,34 @@
+from enum import Enum
 from typing import List, Optional, Any
 
 from i3ipc import Con
 
 from i3l.state import Context
+
+
+class HorizontalPosition(Enum):
+    RIGHT = 'right'
+    LEFT = 'left'
+
+
+class VerticalPosition(Enum):
+    UP = 'up'
+    DOWN = 'down'
+
+
+class AlternateVerticalPosition(VerticalPosition):
+    ALTUP = 'alt-up'
+    ALTDOWN = 'alt-down'
+
+
+class Direction(Enum):
+    VERTICAL = 'vertical'
+    HORIZONTAL = 'horizontal'
+
+
+class ScreenDirection(Enum):
+    INSIDE = 'inside'
+    OUTSIDE = 'outside'
 
 
 class Layout:
@@ -123,24 +149,24 @@ class Spiral(Layout):
         super().__init__('spiral', workspace_name)
         try:
             self.main_ratio = float(params[0]) if len(params) > 0 else 0.5
-            self.spiral_direction = params[1] if len(params) > 1 else 'inside'
+            self.screen_direction = params[1] if len(params) > 1 else 'inside'
         except ValueError:
             self.main_ratio = 0.5
-            self.spiral_direction = 'inside'
+            self.screen_direction = 'inside'
 
     def anchor_mark(self) -> str:
         return self.mark_last()
 
     def _update(self, context: Context):
         if len(context.containers) % 2 == 1:
-            if self.spiral_direction == 'inside' and ((len(context.containers) - 1) / 2) % 2 == 0:
+            if self.screen_direction == 'inside' and ((len(context.containers) - 1) / 2) % 2 == 0:
                 context.exec('move up')
             context.exec('split horizontal')
             if len(context.containers) > 1:
                 ratio = pow(1 - self.main_ratio, (len(context.containers) - 1) / 2)
                 context.exec(f'resize set height {context.workspace_height(ratio)}')
         else:
-            if self.spiral_direction == 'inside' and (len(context.containers) / 2) % 2 == 0:
+            if self.screen_direction == 'inside' and (len(context.containers) / 2) % 2 == 0:
                 context.exec('move left')
             context.exec('split vertical')
             ratio = pow(1 - self.main_ratio, len(context.containers) / 2)
@@ -154,11 +180,11 @@ class Companion(Layout):
         try:
             self.odd_companion_ratio = float(params[0]) if len(params) > 0 else 0.3
             self.even_companion_ratio = float(params[1]) if len(params) > 1 else 0.4
-            self.companion_position = params[2] if len(params) > 2 else 'top'
+            self.companion_position = params[2] if len(params) > 2 else 'up'
         except ValueError:
             self.odd_companion_ratio = 0.3
             self.even_companion_ratio = 0.4
-            self.companion_position = 'top'
+            self.companion_position = 'up'
 
     def anchor_mark(self) -> str:
         return self.mark_last()
@@ -169,9 +195,9 @@ class Companion(Layout):
                 context.exec(f'resize set height {context.workspace_height(self.odd_companion_ratio)}')
             else:
                 context.exec(f'resize set height {context.workspace_height(self.even_companion_ratio)}')
-            if self.companion_position == 'top' or \
-                    (self.companion_position == 'alt-top' and (len(context.containers) / 2) % 2 == 1) or \
-                    (self.companion_position == 'alt-bottom' and (len(context.containers) / 2) % 2 == 0):
+            if self.companion_position == 'up' or \
+                    (self.companion_position == 'alt-up' and (len(context.containers) / 2) % 2 == 1) or \
+                    (self.companion_position == 'alt-down' and (len(context.containers) / 2) % 2 == 0):
                 context.exec('move up')
             context.exec('split vertical')
         else:

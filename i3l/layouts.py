@@ -249,7 +249,7 @@ class Companion(Layout):
                 context.exec(f'resize set height {context.workspace_height(self.odd_companion_ratio)}')
             else:
                 context.exec(f'resize set height {context.workspace_height(self.even_companion_ratio)}')
-            if self.companion_position == 'up' or \
+            if self.companion_position == AlternateVerticalPosition.UP or \
                     (self.companion_position == AlternateVerticalPosition.ALTUP and
                      (len(context.containers) / 2) % 2 == 1) or \
                     (self.companion_position == AlternateVerticalPosition.ALTDOWN and

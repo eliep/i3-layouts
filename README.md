@@ -2,7 +2,8 @@
 
 ![pipy](https://github.com/eliep/i3-layouts/workflows/Publish/badge.svg)
 
-`i3-layouts` is a small program that enforces configurable dynamic layout on i3 workspace.
+`i3-layouts` is a small program that enforces dynamic layout on i3 workspace. 
+Each layout implemented comes with its own set of parameters. 
 
 `i3-layouts` comes with 5 configurable layouts: 
 - `vstack`: one main windows with a vertical stack of windows.
@@ -105,7 +106,7 @@ bindsym $mod+s exec i3-msg -t send_tick "i3-layouts vstack 0.6"
 ```
   
 ### Layouts
-Each layouts accept some specific parameters. 
+Each layout accept some specific parameters. 
 These parameters must be given is the order described below.
 
 #### vstack

@@ -129,8 +129,11 @@ relative to the main stack
 Each new windows split the previous one, split direction alternates between
 horizontal and vertical.
 
-* **split ratio** (default `0.5`): ratio of width or height used by the previous container 
-at each split, the remaining is used by the new container.
+* **split ratio** (float between `0` and `1`, default `0.5`): 
+ratio of width or height used by the previous container at each split, 
+the remaining is used by the new container.
+* **spiral direction** (`inside` or `outside`, default `inside`): 
+whether new container should be added towards the inside of the screen or the outside.
 
 #### 3columns
 One main windows with two vertical stacks of windows.

@@ -123,19 +123,25 @@ class Spiral(Layout):
         super().__init__('spiral', workspace_name)
         try:
             self.main_ratio = float(params[0]) if len(params) > 0 else 0.5
+            self.spiral_direction = params[1] if len(params) > 1 else 'inside'
         except ValueError:
             self.main_ratio = 0.5
+            self.spiral_direction = 'inside'
 
     def anchor_mark(self) -> str:
         return self.mark_last()
 
     def _update(self, context: Context):
         if len(context.containers) % 2 == 1:
+            if self.spiral_direction == 'inside' and ((len(context.containers) - 1) / 2) % 2 == 0:
+                context.exec('move up')
             context.exec('split horizontal')
             if len(context.containers) > 1:
                 ratio = pow(1 - self.main_ratio, (len(context.containers) - 1) / 2)
                 context.exec(f'resize set height {context.workspace_height(ratio)}')
         else:
+            if self.spiral_direction == 'inside' and (len(context.containers) / 2) % 2 == 0:
+                context.exec('move left')
             context.exec('split vertical')
             ratio = pow(1 - self.main_ratio, len(context.containers) / 2)
             context.exec(f'resize set width {context.workspace_width(ratio)}')

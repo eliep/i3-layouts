@@ -4,7 +4,7 @@
 
 `i3-layouts` is a small program that enforces configurable dynamic layout on i3 workspace.
 
-`i3-layouts` comes with 4 configurable layouts: 
+`i3-layouts` comes with 5 configurable layouts: 
 - `vstack`: one main windows with a vertical stack of windows.
 ![vstack](./img/vstack.png)
 - `hstack`: one main windows with an horizontal stack of windows.
@@ -12,8 +12,10 @@
 - `spiral`: each new windows split the previous one, split direction alternates between
 horizontal and vertical.  
 ![spiral](./img/spiral.png)
-- `3columns`: one main widows with two vertical stacks of windows.
+- `3columns`: one main windows with two vertical stacks of windows.
 ![3columns](./img/3columns.png)
+- `companion`: each columns is made of one main window and one smaller window.
+![companion](./img/companion.png)
 
 The [Layout section](#layouts) details the parameters for each one of these layouts. 
 
@@ -107,6 +109,7 @@ Each layouts accept some specific parameters.
 These parameters must be given is the order described below.
 
 #### vstack
+One main windows with a vertical stack of windows.
 
 * **main stack ratio** (float between `0` and `1`, default `0.5`): ratio of screen width used 
 by the main stack
@@ -114,6 +117,7 @@ by the main stack
 relative to the main stack
 
 #### hstack
+One main windows with an horizontal stack of windows.
 
 * **main stack ratio** (float between `0` and `1`, default `0.5`): ratio of screen height used 
 by the main stack
@@ -121,11 +125,14 @@ by the main stack
 relative to the main stack
 
 #### spiral
+Each new windows split the previous one, split direction alternates between
+horizontal and vertical.
 
 * **split ratio** (default `0.5`): ratio of width or height used by the previous container 
 at each split, the remaining is used by the new container.
 
 #### 3columns
+One main windows with two vertical stacks of windows.
 
 * **main stack ratio** [two columns] (float between `0` and `1`, default `0.5`): 
 ratio of screen width used by the main stack when only two columns are present
@@ -139,6 +146,18 @@ If `0` is given new container position alternate between the second and third co
 relative to the main stack. Note that the third column will have the opposite position 
 (if the second columns is on the left of the main stack, the third one will be on the right of 
 the main stack)
+
+#### companion
+Each columns is made of one main window and one smaller window (called companion container below).
+
+* **odd companion ratio** (float between `0` and `1`, default `0.3`): 
+ratio of screen height used by the companion container for odd column index
+* **even companion ratio** (float between `0` and `1`, default `0.3`): 
+ratio of screen height used by the companion container for even column index
+* **companion position** (`top`, `bottom`, `alt-top`, `alt-bottom`, default `top`): 
+position of the companion container relative to the main window. `alt-top` and `alt-bottom`
+alternate this position for each column, starting respectively at `top` and `bottom` for
+the first column.
 
 ## Limitations
 

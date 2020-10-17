@@ -41,6 +41,8 @@ class Layout:
             return Spiral(workspace_name, params)
         elif name == '3columns':
             return ThreeColumns(workspace_name, params)
+        elif name == 'companion':
+            return Companion(workspace_name, params)
 
 
 class Stack(Layout):
@@ -139,6 +141,38 @@ class Spiral(Layout):
             context.exec(f'resize set width {context.workspace_width(ratio)}')
 
 
+class Companion(Layout):
+
+    def __init__(self, workspace_name: str, params: List[Any]):
+        super().__init__('companion', workspace_name)
+        try:
+            self.odd_companion_ratio = float(params[0]) if len(params) > 0 else 0.3
+            self.even_companion_ratio = float(params[1]) if len(params) > 1 else 0.4
+            self.companion_position = params[2] if len(params) > 2 else 'top'
+        except ValueError:
+            self.odd_companion_ratio = 0.3
+            self.even_companion_ratio = 0.4
+            self.companion_position = 'top'
+
+    def anchor_mark(self) -> str:
+        return self.mark_last()
+
+    def _update(self, context: Context):
+        if len(context.containers) % 2 == 0:
+            if (len(context.containers) / 2) % 2 == 1:
+                context.exec(f'resize set height {context.workspace_height(self.odd_companion_ratio)}')
+            else:
+                context.exec(f'resize set height {context.workspace_height(self.even_companion_ratio)}')
+            if self.companion_position == 'top' or \
+                    (self.companion_position == 'alt-top' and (len(context.containers) / 2) % 2 == 1) or \
+                    (self.companion_position == 'alt-bottom' and (len(context.containers) / 2) % 2 == 0):
+                context.exec('move up')
+            context.exec('split vertical')
+        else:
+            context.exec('move right')
+            context.exec('split vertical')
+
+
 class ThreeColumns(Layout):
 
     def __init__(self, workspace_name: str, params: List[Any]):
@@ -177,10 +211,9 @@ class ThreeColumns(Layout):
             main_width = context.workspace_width(self.three_columns_main_ratio)
             context.exec(f'[con_mark="{self.mark_main()}"] resize set {main_width}')
             for container in context.containers:
-                print(container.id, container.marks)
                 if self.mark_main() not in container.marks:
-                    print(f'[con_id="{container.id}"] resize set {context.workspace_width(self.three_columns_main_ratio / 2)}')
-                    context.exec(f'[con_id="{container.id}"] resize set {context.workspace_width(self.three_columns_main_ratio / 2)}')
+                    width = context.workspace_width(self.three_columns_main_ratio / 2)
+                    context.exec(f'[con_id="{container.id}"] resize set {width}')
 
     def _move_to_column(self, context: Context, column: str):
         if (self.second_column_position == 'right' and column == 'second') or \

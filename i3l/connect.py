@@ -23,11 +23,11 @@ def connect():
 
     i3_config = i3.get_config()
     workspace_layouts = WorkspaceLayout.load(i3_config)
-    layouts = Layouts([Layout.create(workspace_layout.layout_name,
-                                     workspace_layout.layout_params,
-                                     workspace_layout.workspace_name)
-                       for workspace_layout in workspace_layouts])
-
+    layouts = Layouts([layout for layout in
+                       (Layout.create(workspace_layout.layout_name,
+                                      workspace_layout.layout_params,
+                                      workspace_layout.workspace_name) for workspace_layout in workspace_layouts)
+                       if layout is not None])
     state = State()
     i3.on(Event.WORKSPACE_FOCUS, on_workspace_focus(layouts, state))
     i3.on(Event.WINDOW_NEW, on_window_new(layouts, state))

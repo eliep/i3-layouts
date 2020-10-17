@@ -55,9 +55,11 @@ def on_tick(layouts: Layouts, state: State):
         layout_params = tokens[2:]
         if layout_name != 'none':
             logger.debug(f'[ipc] tick event - redraw workspace')
-            layout = layouts.add(Layout.create(layout_name, layout_params, context.workspace.name))
-            state.add_workspace_sequence(context.workspace.name)
-            redraw_workspace(state, layout)
+            layout = Layout.create(layout_name, layout_params, context.workspace.name)
+            if layout is not None:
+                layouts.add(layout)
+                state.add_workspace_sequence(context.workspace.name)
+                redraw_workspace(state, layout)
         else:
             logger.debug(f'[ipc] tick event - removing workspace layout')
             layouts.remove(context.workspace.name)

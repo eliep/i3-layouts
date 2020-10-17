@@ -1,9 +1,20 @@
+import logging
 from enum import Enum
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Union
 
 from i3ipc import Con
 
 from i3l.state import Context
+
+logger = logging.getLogger(__name__)
+
+
+class LayoutName(Enum):
+    VSTACK = 'vstack'
+    HSTACK = 'hstack'
+    SPIRAL = 'spiral'
+    THREE_COLUMNS = '3columns'
+    COMPANION = 'companion'
 
 
 class HorizontalPosition(Enum):
@@ -16,7 +27,9 @@ class VerticalPosition(Enum):
     DOWN = 'down'
 
 
-class AlternateVerticalPosition(VerticalPosition):
+class AlternateVerticalPosition(Enum):
+    UP = 'up'
+    DOWN = 'down'
     ALTUP = 'alt-up'
     ALTDOWN = 'alt-down'
 
@@ -31,10 +44,22 @@ class ScreenDirection(Enum):
     OUTSIDE = 'outside'
 
 
+class ResizeDirection(Enum):
+    WIDTH = 'width'
+    HEIGHT = 'height'
+
+
 class Layout:
-    def __init__(self, layout_name: str, workspace_name: str):
+    def __init__(self, layout_name: LayoutName, workspace_name: str):
         self.name = layout_name
         self.workspace_name = workspace_name
+
+    def _warn_wrong_parameters(self, params: List[Any]):
+        logger.warning(f'[layouts] Invalid {self.name.value} layout parameters {params}, '
+                       f'using default {self._params()}')
+
+    def _params(self) -> List[Any]:
+        pass
 
     def mark_main(self):
         return f'i3l:{self.workspace_name}:main'
@@ -58,115 +83,139 @@ class Layout:
         pass
 
     @staticmethod
-    def create(name: str, params: List[Any], workspace_name: str) -> 'Layout':
-        if name == 'vstack':
+    def create(name: str, params: List[Any], workspace_name: str) -> Optional['Layout']:
+        try:
+            layout_name = LayoutName(name)
+        except ValueError:
+            logger.error(f'[layouts] Invalid layout name: {name}')
+            return None
+
+        if layout_name == LayoutName.VSTACK:
             return VStack(workspace_name, params)
-        elif name == 'hstack':
+        elif layout_name == LayoutName.HSTACK:
             return HStack(workspace_name, params)
-        elif name == 'spiral':
+        elif layout_name == LayoutName.SPIRAL:
             return Spiral(workspace_name, params)
-        elif name == '3columns':
+        elif layout_name == LayoutName.THREE_COLUMNS:
             return ThreeColumns(workspace_name, params)
-        elif name == 'companion':
+        elif layout_name == LayoutName.COMPANION:
             return Companion(workspace_name, params)
 
 
 class Stack(Layout):
-    def __init__(self, layout_name: str, workspace_name: str, params: List[Any]):
+    def __init__(self, layout_name: LayoutName, workspace_name: str, params: List[Any]):
         super().__init__(layout_name, workspace_name)
         try:
             self.main_ratio = float(params[0]) if len(params) > 0 else 0.5
-            self.second_axe_position = params[1] if len(params) > 1 else self._default_second_axe_position()
+            self.second_axe_position = self._second_axe_position(params[1]) \
+                if len(params) > 1 else self._default_second_axe_position()
         except ValueError:
             self.main_ratio = 0.5
             self.second_axe_position = self._default_second_axe_position()
+            self._warn_wrong_parameters(params)
+
+    def _params(self) -> List[Any]:
+        return [self.main_ratio, self.second_axe_position.value]
 
     def anchor_mark(self) -> str:
         return self.mark_last()
 
     def _update(self, context: Context):
         if len(context.containers) == 1:
-            context.exec(f'split {self._first_direction()}')
+            context.exec(f'split {self._first_direction().value}')
         elif len(context.containers) == 2:
-            context.exec(f'move {self.second_axe_position}')
+            context.exec(f'move {self.second_axe_position.value}')
             size = context.workspace_width(1 - self.main_ratio) \
-                if self._resize_direction() == 'width' else context.workspace_height(1 - self.main_ratio)
-            context.exec(f'resize set {self._resize_direction()} {size}')
-            context.exec(f'split {self._second_direction()}')
+                if self._resize_direction() == ResizeDirection.WIDTH else context.workspace_height(1 - self.main_ratio)
+            context.exec(f'resize set {self._resize_direction().value} {size}')
+            context.exec(f'split {self._second_direction().value}')
 
-    def _first_direction(self):
+    def _first_direction(self) -> Direction:
         pass
 
-    def _second_direction(self):
+    def _second_direction(self) -> Direction:
         pass
 
-    def _resize_direction(self):
+    def _resize_direction(self) -> ResizeDirection:
         pass
 
-    def _default_second_axe_position(self):
+    def _second_axe_position(self, second_axe_position: str) -> Union[HorizontalPosition, VerticalPosition]:
+        pass
+
+    def _default_second_axe_position(self) -> Union[HorizontalPosition, VerticalPosition]:
         pass
 
 
 class VStack(Stack):
 
     def __init__(self, workspace_name: str, params: List[Any]):
-        super().__init__('vstack', workspace_name, params)
+        super().__init__(LayoutName.VSTACK, workspace_name, params)
 
-    def _first_direction(self):
-        return 'horizontal'
+    def _first_direction(self) -> Direction:
+        return Direction.HORIZONTAL
 
-    def _second_direction(self):
-        return 'vertical'
+    def _second_direction(self) -> Direction:
+        return Direction.VERTICAL
 
-    def _resize_direction(self):
-        return 'width'
+    def _resize_direction(self) -> ResizeDirection:
+        return ResizeDirection.WIDTH
 
-    def _default_second_axe_position(self):
-        return 'right'
+    def _second_axe_position(self, second_axe_position: str) -> HorizontalPosition:
+        return HorizontalPosition(second_axe_position)
+
+    def _default_second_axe_position(self) -> HorizontalPosition:
+        return HorizontalPosition.RIGHT
 
 
 class HStack(Stack):
 
     def __init__(self, workspace_name: str, params: List[Any]):
-        super().__init__('hstack', workspace_name, params)
+        super().__init__(LayoutName.HSTACK, workspace_name, params)
 
-    def _first_direction(self):
-        return 'vertical'
+    def _first_direction(self) -> Direction:
+        return Direction.VERTICAL
 
-    def _second_direction(self):
-        return 'horizontal'
+    def _second_direction(self) -> Direction:
+        return Direction.HORIZONTAL
 
-    def _resize_direction(self):
-        return 'height'
+    def _resize_direction(self) -> ResizeDirection:
+        return ResizeDirection.HEIGHT
 
-    def _default_second_axe_position(self):
-        return 'up'
+    def _second_axe_position(self, second_axe_position: str) -> VerticalPosition:
+        return VerticalPosition(second_axe_position)
+
+    def _default_second_axe_position(self) -> VerticalPosition:
+        return VerticalPosition.UP
 
 
 class Spiral(Layout):
 
     def __init__(self, workspace_name: str, params: List[Any]):
-        super().__init__('spiral', workspace_name)
+        super().__init__(LayoutName.SPIRAL, workspace_name)
         try:
             self.main_ratio = float(params[0]) if len(params) > 0 else 0.5
-            self.screen_direction = params[1] if len(params) > 1 else 'inside'
+            self.screen_direction = ScreenDirection(params[1]) if len(params) > 1 else ScreenDirection.INSIDE
         except ValueError:
             self.main_ratio = 0.5
-            self.screen_direction = 'inside'
+            self.screen_direction = ScreenDirection.INSIDE
+            self._warn_wrong_parameters(params)
+
+    def _params(self) -> List[Any]:
+        return [self.main_ratio, self.screen_direction.value]
 
     def anchor_mark(self) -> str:
         return self.mark_last()
 
     def _update(self, context: Context):
         if len(context.containers) % 2 == 1:
-            if self.screen_direction == 'inside' and ((len(context.containers) - 1) / 2) % 2 == 0:
+            if self.screen_direction == ScreenDirection.INSIDE and ((len(context.containers) - 1) / 2) % 2 == 0:
                 context.exec('move up')
             context.exec('split horizontal')
             if len(context.containers) > 1:
                 ratio = pow(1 - self.main_ratio, (len(context.containers) - 1) / 2)
                 context.exec(f'resize set height {context.workspace_height(ratio)}')
         else:
-            if self.screen_direction == 'inside' and (len(context.containers) / 2) % 2 == 0:
+            if self.screen_direction == ScreenDirection.INSIDE and (len(context.containers) / 2) % 2 == 0:
                 context.exec('move left')
             context.exec('split vertical')
             ratio = pow(1 - self.main_ratio, len(context.containers) / 2)
@@ -176,15 +225,20 @@ class Spiral(Layout):
 class Companion(Layout):
 
     def __init__(self, workspace_name: str, params: List[Any]):
-        super().__init__('companion', workspace_name)
+        super().__init__(LayoutName.COMPANION, workspace_name)
         try:
             self.odd_companion_ratio = float(params[0]) if len(params) > 0 else 0.3
             self.even_companion_ratio = float(params[1]) if len(params) > 1 else 0.4
-            self.companion_position = params[2] if len(params) > 2 else 'up'
+            self.companion_position = AlternateVerticalPosition(params[2]) \
+                if len(params) > 2 else AlternateVerticalPosition.UP
         except ValueError:
             self.odd_companion_ratio = 0.3
             self.even_companion_ratio = 0.4
-            self.companion_position = 'up'
+            self.companion_position = AlternateVerticalPosition.UP
+            self._warn_wrong_parameters(params)
+
+    def _params(self) -> List[Any]:
+        return [self.odd_companion_ratio, self.even_companion_ratio, self.companion_position.value]
 
     def anchor_mark(self) -> str:
         return self.mark_last()
@@ -196,8 +250,10 @@ class Companion(Layout):
             else:
                 context.exec(f'resize set height {context.workspace_height(self.even_companion_ratio)}')
             if self.companion_position == 'up' or \
-                    (self.companion_position == 'alt-up' and (len(context.containers) / 2) % 2 == 1) or \
-                    (self.companion_position == 'alt-down' and (len(context.containers) / 2) % 2 == 0):
+                    (self.companion_position == AlternateVerticalPosition.ALTUP and
+                     (len(context.containers) / 2) % 2 == 1) or \
+                    (self.companion_position == AlternateVerticalPosition.ALTDOWN and
+                     (len(context.containers) / 2) % 2 == 0):
                 context.exec('move up')
             context.exec('split vertical')
         else:
@@ -208,17 +264,24 @@ class Companion(Layout):
 class ThreeColumns(Layout):
 
     def __init__(self, workspace_name: str, params: List[Any]):
-        super().__init__('3columns', workspace_name)
+        super().__init__(LayoutName.THREE_COLUMNS, workspace_name)
         try:
             self.two_columns_main_ratio = float(params[0]) if len(params) > 0 else 0.5
             self.three_columns_main_ratio = float(params[1]) if len(params) > 1 else 0.5
             self.second_column_max = int(params[2]) if len(params) > 2 else 0
-            self.second_column_position = params[3] if len(params) > 3 else 'left'
+            self.second_column_position = HorizontalPosition(params[3]) if len(params) > 3 else HorizontalPosition.LEFT
         except ValueError:
             self.two_columns_main_ratio = 0.5
             self.three_columns_main_ratio = 0.5
             self.second_column_max = 0
-            self.second_column_position = 'left'
+            self.second_column_position = HorizontalPosition.LEFT
+            self._warn_wrong_parameters(params)
+
+    def _params(self) -> List[Any]:
+        return [self.two_columns_main_ratio,
+                self.three_columns_main_ratio,
+                self.second_column_max,
+                self.second_column_position.value]
 
     def anchor_mark(self) -> str:
         return self.mark_main()
@@ -248,8 +311,8 @@ class ThreeColumns(Layout):
                     context.exec(f'[con_id="{container.id}"] resize set {width}')
 
     def _move_to_column(self, context: Context, column: str):
-        if (self.second_column_position == 'right' and column == 'second') or \
-                (self.second_column_position == 'left' and column == 'third'):
+        if (self.second_column_position == HorizontalPosition.RIGHT and column == 'second') or \
+                (self.second_column_position == HorizontalPosition.LEFT and column == 'third'):
             context.exec('move right')
         else:
             context.exec('move left')

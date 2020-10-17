@@ -80,7 +80,7 @@ set $i3l 3columns 0.66 0.5 2 left to workspace $ws4
 ### Switching layout
 
 It possible to dynamically switch the current workspace layout by sending a `send_tick`
-message with `i3-msg` to `i3-layouts`. The message must start with `i3-layouts` 
+message with `i3-msg`. The message must start with `i3-layouts` 
 followed by one of the layout name or `none`:
 
 - If a layout name is given, and windows are already present, 

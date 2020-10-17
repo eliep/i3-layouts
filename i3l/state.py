@@ -65,7 +65,9 @@ class State:
         tree = i3l.get_tree()
         focused = tree.find_focused()
         workspace = focused.workspace()
-        containers = [container for container in workspace if container.window is not None]
+        containers = [container for container in workspace if container.window is not None and container.type == 'con']
+        containers = sorted(containers, key=lambda container: container.window)
+
         state = self.get_workspace_sequence(workspace.name)
         self.context = Context(i3l, workspace, focused, containers, state)
         return self.context

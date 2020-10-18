@@ -50,7 +50,7 @@ class WorkspaceLayout:
 
     @staticmethod
     def _create_workspace_layout(i3l_option) -> Optional['WorkspaceLayout']:
-        match = re.match('([^ ]*) (.*) to workspace "?([^"]*)"?', i3l_option)
+        match = re.match('([^ ]*) (.*) ?to workspace "?([^"]*)"?', i3l_option)
         if match:
             try:
                 layout_name = match.group(1)

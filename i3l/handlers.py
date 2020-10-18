@@ -1,24 +1,12 @@
 from i3ipc import Connection, TickEvent
 from i3ipc.events import WorkspaceEvent, WindowEvent
 import logging
-import shlex
-import subprocess
 
 from i3l.state import State
 from i3l.layouts import Layouts, Layout
 
 
 logger = logging.getLogger(__name__)
-
-
-def xdo_unmap_window(window_id):
-    command = shlex.split(f'xdotool windowunmap {window_id}')
-    subprocess.call(command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-
-
-def xdo_map_window(window_id):
-    command = shlex.split(f'xdotool windowmap {window_id}')
-    subprocess.call(command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 
 def containers_after(con_id, containers, state):
@@ -33,10 +21,10 @@ def redraw_workspace(state: State, layout: Layout, con_id: int = 0):
         state.containers_closed = []
         if len(state.containers_to_redraw) > 0:
             for container_window_id in state.containers_to_redraw:
-                xdo_unmap_window(container_window_id)
+                state.context.xdo_unmap_window(container_window_id)
                 state.containers_closed.append(container_window_id)
             container_window_id = state.containers_to_redraw.pop(0)
-            xdo_map_window(container_window_id)
+            state.context.xdo_map_window(container_window_id)
         elif len(containers) == 1:
             state.context.exec(f'[con_id="{containers[-1].id}"] mark {layout.mark_main()}')
         else:
@@ -141,6 +129,6 @@ def on_window_new(layouts: Layouts, state: State):
 
         if len(state.containers_to_redraw) > 0:
             container_window_id = state.containers_to_redraw.pop(0)
-            xdo_map_window(container_window_id)
+            context.xdo_map_window(container_window_id)
 
     return _on_window_new

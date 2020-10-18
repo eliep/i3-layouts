@@ -1,3 +1,5 @@
+import shlex
+import subprocess
 from typing import Dict, List, Optional
 
 from i3ipc import Con, Connection, CommandReply
@@ -50,6 +52,18 @@ class Context:
 
     def exec(self, payload: str) -> List[CommandReply]:
         return self.i3l.command(payload)
+
+    def xdo_unmap_window(self, window_id: Optional[int] = None):
+        if window_id is None:
+            window_id = self.focused.window
+        command = shlex.split(f'xdotool windowunmap {window_id}')
+        subprocess.call(command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+    def xdo_map_window(self, window_id: Optional[int] = None):
+        if window_id is None:
+            window_id = self.focused.window
+        command = shlex.split(f'xdotool windowmap {window_id}')
+        subprocess.call(command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 
 class State:

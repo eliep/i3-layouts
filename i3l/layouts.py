@@ -87,7 +87,7 @@ class Layout:
         try:
             layout_name = LayoutName(name)
         except ValueError:
-            logger.error(f'[layouts] Invalid layout name: {name}')
+            logger.error(f'[layouts] Invalid layout name: {name}. Skipping')
             return None
 
         if layout_name == LayoutName.VSTACK:
@@ -124,7 +124,8 @@ class Stack(Layout):
         if len(context.containers) == 1:
             context.exec(f'split {self._first_direction().value}')
         elif len(context.containers) == 2:
-            context.exec(f'move {self.second_axe_position.value}')
+            context.exec(f'[con_id="{context.focused.id}"] move {self.second_axe_position.value}')
+            context.exec(f'[con_id="{context.focused.id}"] move {self.second_axe_position.value}')
             size = context.workspace_width(1 - self.main_ratio) \
                 if self._resize_direction() == ResizeDirection.WIDTH else context.workspace_height(1 - self.main_ratio)
             context.exec(f'resize set {self._resize_direction().value} {size}')
@@ -209,14 +210,14 @@ class Spiral(Layout):
     def _update(self, context: Context):
         if len(context.containers) % 2 == 1:
             if self.screen_direction == ScreenDirection.INSIDE and ((len(context.containers) - 1) / 2) % 2 == 0:
-                context.exec('move up')
+                context.exec(f'[con_id="{context.focused.id}"] move up')
             context.exec('split horizontal')
             if len(context.containers) > 1:
                 ratio = pow(1 - self.main_ratio, (len(context.containers) - 1) / 2)
                 context.exec(f'resize set height {context.workspace_height(ratio)}')
         else:
             if self.screen_direction == ScreenDirection.INSIDE and (len(context.containers) / 2) % 2 == 0:
-                context.exec('move left')
+                context.exec(f'[con_id="{context.focused.id}"] move left')
             context.exec('split vertical')
             ratio = pow(1 - self.main_ratio, len(context.containers) / 2)
             context.exec(f'resize set width {context.workspace_width(ratio)}')
@@ -254,10 +255,10 @@ class Companion(Layout):
                      (len(context.containers) / 2) % 2 == 1) or \
                     (self.companion_position == AlternateVerticalPosition.ALTDOWN and
                      (len(context.containers) / 2) % 2 == 0):
-                context.exec('move up')
+                context.exec(f'[con_id="{context.focused.id}"] move up')
             context.exec('split vertical')
         else:
-            context.exec('move right')
+            context.exec(f'[con_id="{context.focused.id}"] move right')
             context.exec('split vertical')
 
 
@@ -313,10 +314,10 @@ class ThreeColumns(Layout):
     def _move_to_column(self, context: Context, column: str):
         if (self.second_column_position == HorizontalPosition.RIGHT and column == 'second') or \
                 (self.second_column_position == HorizontalPosition.LEFT and column == 'third'):
-            context.exec('move right')
+            context.exec(f'[con_id="{context.focused.id}"] move right')
         else:
-            context.exec('move left')
-            context.exec('move left')
+            context.exec(f'[con_id="{context.focused.id}"] move left')
+            context.exec(f'[con_id="{context.focused.id}"] move left')
 
 
 class Layouts:
@@ -338,5 +339,5 @@ class Layouts:
         if workspace_name in self.layouts:
             del self.layouts[workspace_name]
 
-    def exists_for(self, workspace_name: int) -> bool:
+    def exists_for(self, workspace_name: str) -> bool:
         return workspace_name in self.layouts

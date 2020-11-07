@@ -1,8 +1,28 @@
+import logging
 import shlex
 import subprocess
+from enum import Enum
 from typing import Dict, List, Optional
 
 from i3ipc import Con, Connection, CommandReply
+
+logger = logging.getLogger(__name__)
+
+
+class RebuildCause(Enum):
+    LAYOUT_CHANGE_VSTACK = 'layout_change_vstack'
+    LAYOUT_CHANGE_HSTACK = 'layout_change_hstack'
+    LAYOUT_CHANGE_SPIRAL = 'layout_change_spiral'
+    LAYOUT_CHANGE_COMPANION = 'layout_change_companion'
+    LAYOUT_CHANGE_3COLUMNS = 'layout_change_3columns'
+    WORKSPACE_FOCUS = 'workspace_focus'
+    WINDOW_CLOSE = 'window_close'
+    WINDOW_MOVE = 'window_move'
+    WINDOW_NEW = 'window_new'
+
+    @staticmethod
+    def layout_change(layout_name: str) -> 'RebuildCause':
+        return RebuildCause(f'layout_change_{layout_name}')
 
 
 class WorkspaceSequence:
@@ -57,23 +77,71 @@ class Context:
         if window_id is None:
             window_id = self.focused.window
         command = shlex.split(f'xdotool windowunmap {window_id}')
-        subprocess.call(command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        subprocess.run(command)
 
     def xdo_map_window(self, window_id: Optional[int] = None):
         if window_id is None:
             window_id = self.focused.window
         command = shlex.split(f'xdotool windowmap {window_id}')
-        subprocess.call(command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        subprocess.run(command)
+
+
+class RebuildAction:
+
+    def __init__(self):
+        self.rebuild_cause: Optional[RebuildCause] = None
+        self.containers_to_close: List[int] = []
+        self.containers_to_recreate: List[int] = []
+
+    @staticmethod
+    def _containers_after(con_id: int, containers: List[Con], workspace_sequence: WorkspaceSequence):
+        return [con.window for con in containers
+                if con_id == 0 or
+                workspace_sequence.window_numbers[con.id] >= workspace_sequence.window_numbers[con_id]]
+
+    def start_rebuild(self, i3l: Connection, context: Context, rebuild_cause: RebuildCause,
+                      main_mark: str, last_mark: str, con_id: int = 0):
+        if rebuild_cause is not None:
+            self.rebuild_cause = rebuild_cause
+
+        containers = context.sorted_containers()
+        if len(containers) == 0 or (con_id != 0 and con_id not in context.workspace_sequence.window_numbers):
+            self.end_rebuild(i3l)
+            return
+
+        self.containers_to_recreate = self._containers_after(con_id, containers, context.workspace_sequence)
+        self.containers_to_close = []
+        if len(self.containers_to_recreate) > 0:
+            for container_window_id in self.containers_to_recreate:
+                context.xdo_unmap_window(container_window_id)
+                self.containers_to_close.append(container_window_id)
+            container_window_id = self.containers_to_recreate.pop(0)
+            context.xdo_map_window(container_window_id)
+        elif len(containers) == 1:
+            context.exec(f'[con_id="{containers[-1].id}"] mark {main_mark}')
+            self.end_rebuild(i3l)
+        else:
+            context.exec(f'[con_id="{containers[-1].id}"] mark {last_mark}')
+            self.end_rebuild(i3l)
+
+    def end_rebuild(self, i3l: Connection, cause: RebuildCause = None):
+        rebuild_cause = self.rebuild_cause if cause is None else cause
+        i3l.send_tick(f'i3-layouts rebuild {rebuild_cause.value}')
+        if cause is None or self.rebuild_cause is None:
+            self.rebuild_cause = None
 
 
 class State:
-    def __init__(self):
+    def __init__(self, i3):
         self.context: Optional[Context] = None
         self.workspace_sequences: Dict[str, WorkspaceSequence] = {}
-        self.containers_closed: List[int] = []
-        self.containers_to_redraw: List[int] = []
-        self.prev_workspace_name = ''
+        self.rebuild_action = RebuildAction()
         self.old_workspace_name = ''
+        self.sync_context(i3)
+        for workspace in i3.get_workspaces():
+            if workspace.focused:
+                self.add_workspace_sequence(workspace.name)
+                self.prev_workspace_name = workspace.name
 
     def sync_context(self, i3l: Connection) -> Context:
         tree = i3l.get_tree()
@@ -82,17 +150,41 @@ class State:
         containers = [container for container in workspace if container.window is not None and container.type == 'con']
         containers = sorted(containers, key=lambda container: container.window)
 
-        state = self.get_workspace_sequence(workspace.name)
-        self.context = Context(i3l, workspace, focused, containers, state)
+        workspace_sequence = self.get_workspace_sequence(workspace.name)
+        self.context = Context(i3l, workspace, focused, containers, workspace_sequence)
         return self.context
+
+    def has_rebuild_in_progress(self):
+        return self.rebuild_action.rebuild_cause is not None
+
+    def is_rebuild_finished(self):
+        return self.has_rebuild_in_progress() and len(self.rebuild_action.containers_to_recreate) == 0
+
+    def rebuild_closed_container(self, window_id: int):
+        return window_id in self.rebuild_action.containers_to_close
+
+    def start_rebuild(self, i3l: Connection, rebuild_cause: RebuildCause, context: Context,
+                      main_mark: str, last_mark: str, con_id: int = 0):
+        logger.debug(f'[state] rebuilding for {rebuild_cause}')
+        self.rebuild_action.start_rebuild(i3l, context, rebuild_cause, main_mark, last_mark, con_id)
+
+    def recreate_next_window(self, context: Context):
+        container_window_id = self.rebuild_action.containers_to_recreate.pop(0)
+        context.xdo_map_window(container_window_id)
+
+    def remove_closed_container(self, window_id: int):
+        self.rebuild_action.containers_to_close.remove(window_id)
+
+    def end_rebuild(self, i3l: Connection, cause: RebuildCause = None):
+        self.rebuild_action.end_rebuild(i3l, cause)
 
     def get_workspace_sequence(self, workspace_name: str) -> Optional[WorkspaceSequence]:
         return self.workspace_sequences[workspace_name] if workspace_name in self.workspace_sequences else None
 
     def add_workspace_sequence(self, workspace_name: str) -> WorkspaceSequence:
         if workspace_name not in self.workspace_sequences:
-            state = WorkspaceSequence()
-            self.workspace_sequences[workspace_name] = state
+            workspace_sequence = WorkspaceSequence()
+            self.workspace_sequences[workspace_name] = workspace_sequence
         if self.context.workspace.name == workspace_name:
             for container in self.context.containers:
                 if container.id not in self.workspace_sequences[workspace_name].window_numbers:

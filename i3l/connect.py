@@ -28,7 +28,7 @@ def connect():
                                       workspace_layout.layout_params,
                                       workspace_layout.workspace_name) for workspace_layout in workspace_layouts)
                        if layout is not None])
-    state = State()
+    state = State(i3)
     i3.on(Event.WORKSPACE_FOCUS, on_workspace_focus(layouts, state))
     i3.on(Event.WINDOW_NEW, on_window_new(layouts, state))
     i3.on(Event.WINDOW_MOVE, on_window_move(layouts, state))

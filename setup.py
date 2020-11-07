@@ -20,10 +20,10 @@ setuptools.setup(
         "Operating System :: POSIX :: Linux",
     ],
     install_requires=[
-      'i3ipc'
+        'i3ipc'
     ],
     tests_require=[
-      'python-xlib'
+        'python-xlib'
     ],
     entry_points={
         'console_scripts': ['i3-layouts=i3l.cli:main']

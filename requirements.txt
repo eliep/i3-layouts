@@ -1,2 +1,1 @@
 i3ipc~=2.2.1
-setuptools~=50.3.2

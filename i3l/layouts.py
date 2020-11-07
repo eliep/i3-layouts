@@ -250,16 +250,17 @@ class Companion(Layout):
                 context.exec(f'resize set height {context.workspace_height(self.odd_companion_ratio)}')
             else:
                 context.exec(f'resize set height {context.workspace_height(self.even_companion_ratio)}')
-            if self.companion_position == AlternateVerticalPosition.UP or \
-                    (self.companion_position == AlternateVerticalPosition.ALTUP and
-                     (len(context.containers) / 2) % 2 == 1) or \
-                    (self.companion_position == AlternateVerticalPosition.ALTDOWN and
-                     (len(context.containers) / 2) % 2 == 0):
+            if self.should_moves_up(context):
                 context.exec(f'[con_id="{context.focused.id}"] move up')
             context.exec('split vertical')
         else:
             context.exec(f'[con_id="{context.focused.id}"] move right')
             context.exec('split vertical')
+
+    def should_moves_up(self, ctx: Context) -> bool:
+        return self.companion_position == AlternateVerticalPosition.UP or \
+            (self.companion_position == AlternateVerticalPosition.ALTUP and (len(ctx.containers) / 2) % 2 == 1) or \
+            (self.companion_position == AlternateVerticalPosition.ALTDOWN and (len(ctx.containers) / 2) % 2 == 0)
 
 
 class ThreeColumns(Layout):

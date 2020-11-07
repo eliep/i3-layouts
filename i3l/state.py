@@ -32,9 +32,12 @@ class WorkspaceSequence:
         self.is_stale = False
         self.stale_con_id = 0
 
-    def assign_number(self, container: Con):
+    def set_order(self, container: Con):
         self.window_count += 1
         self.window_numbers[container.id] = self.window_count
+
+    def get_order(self, con_id: int) -> int:
+        return self.window_numbers[con_id]
 
     def set_stale(self, stale: bool, con_id: int = 0):
         self.is_stale = stale
@@ -62,7 +65,7 @@ class Context:
         return len(containers) > 0
 
     def sorted_containers(self) -> List[Con]:
-        return sorted(self.containers, key=lambda container: self.workspace_sequence.window_numbers[container.id])
+        return sorted(self.containers, key=lambda container: self.workspace_sequence.get_order(container.id))
 
     def workspace_width(self, ratio: float = 1.0) -> int:
         return int(self.workspace.rect.width * ratio)
@@ -96,8 +99,7 @@ class RebuildAction:
     @staticmethod
     def _containers_after(con_id: int, containers: List[Con], workspace_sequence: WorkspaceSequence):
         return [con.window for con in containers
-                if con_id == 0 or
-                workspace_sequence.window_numbers[con.id] >= workspace_sequence.window_numbers[con_id]]
+                if con_id == 0 or workspace_sequence.get_order(con.id) >= workspace_sequence.get_order(con_id)]
 
     def start_rebuild(self, i3l: Connection, context: Context, rebuild_cause: RebuildCause,
                       main_mark: str, last_mark: str, con_id: int = 0):
@@ -188,7 +190,7 @@ class State:
         if self.context.workspace.name == workspace_name:
             for container in self.context.containers:
                 if container.id not in self.workspace_sequences[workspace_name].window_numbers:
-                    self.workspace_sequences[workspace_name].assign_number(container)
+                    self.workspace_sequences[workspace_name].set_order(container)
                     self.workspace_sequences[workspace_name].set_stale(True)
         self.context.workspace_sequence = self.workspace_sequences[workspace_name]
         return self.workspace_sequences[workspace_name]

@@ -1,5 +1,6 @@
 # i3-layouts
 
+![test](https://github.com/eliep/i3-layouts/workflows/Test/badge.svg)
 ![pipy](https://github.com/eliep/i3-layouts/workflows/Publish/badge.svg)
 
 `i3-layouts` is a small program that enforces dynamic layout on i3 workspace. 

@@ -3,6 +3,8 @@ import sys
 import unittest
 from typing import List, Callable
 
+import pytest
+from pytest import approx
 from Xlib import X
 from Xlib.display import Display
 from Xlib.xobject.drawable import Window
@@ -51,12 +53,13 @@ class Workspaces:
         self.delete_window(index, workspace_from)
 
 
-class I3LayoutTestCase(unittest.TestCase):
+class AbstractTestCase:
 
-    def setUp(self):
-        self.display = Display()
-        self.i3 = Connection()
-        self.workspaces = Workspaces(2, 0)
+    @classmethod
+    def setup_class(cls):
+        cls.display = Display()
+        cls.i3 = Connection()
+        cls.workspaces = Workspaces(2, 0)
 
     def _set_layout(self, payload: str):
         self.i3.send_tick('i3-layouts ' + payload)
@@ -183,11 +186,8 @@ class I3LayoutTestCase(unittest.TestCase):
             if x.type == X.KeyPress and x.detail == 38:
                 do_quit = True
 
-    def tearDown(self) -> None:
-        pass
 
-
-class I3LayoutScenario(I3LayoutTestCase):
+class I3LayoutScenario(AbstractTestCase):
 
     def senario(self):
         self._set_layout(self.layout())
@@ -238,14 +238,12 @@ class I3LayoutScenario(I3LayoutTestCase):
     def alternate_layout(self) -> str:
         pass
 
-    def tearDown(self) -> None:
-        self._close_all()
 
-
-class HStackTestCase(I3LayoutScenario):
+class TestHStack(I3LayoutScenario):
 
     def test_scenario(self):
         self.senario()
+        self._close_all()
 
     def layout(self) -> str:
         ratio, position = self.layout_params()
@@ -265,27 +263,28 @@ class HStackTestCase(I3LayoutScenario):
 
         first = geoms[0]
         master_height = 800 * ratio - 2
-        self.assertEqual(first.height, master_height)
+        assert first.height == master_height
 
         last = geoms[-1]
         stack_height = 800 * (1 - ratio) - 2
-        self.assertAlmostEqual(last.height, stack_height, delta=1)
+        assert last.height == approx(stack_height, abs=1)
 
         for i, geom in enumerate(geoms[1:]):
             if position == 'down':
-                self.assertGreater(geom.y, first.y + first.height)
+                assert geom.y > first.y + first.height
             elif position == 'up':
-                self.assertLess(geom.y, first.y + first.height)
+                assert geom.y < first.y + first.height
 
             if i + 1 < len(geoms) - 1:
-                self.assertLess(geom.x + geom.width, geoms[i+2].x)
-                self.assertAlmostEqual(geom.width, geoms[i + 2].width, delta=1)
+                assert geom.x + geom.width < geoms[i+2].x
+                assert geom.width == approx(geoms[i + 2].width, abs=1)
 
 
-class VStackTestCase(I3LayoutScenario):
+class TestVStack(I3LayoutScenario):
 
     def test_scenario(self):
         self.senario()
+        self._close_all()
 
     def layout(self) -> str:
         ratio, position = self.layout_params()
@@ -304,27 +303,28 @@ class VStackTestCase(I3LayoutScenario):
 
         first = geoms[0]
         master_width = 1280 * ratio - 2
-        self.assertEqual(first.width, master_width)
+        assert first.width == master_width
 
         last = geoms[-1]
         stack_width = 1280 * (1 - ratio) - 2
-        self.assertAlmostEqual(last.width, stack_width, delta=1)
+        assert last.width == approx(stack_width, abs=1)
 
         for i, geom in enumerate(geoms[1:]):
             if position == 'right':
-                self.assertGreater(geom.x, first.x + first.width)
+                assert geom.x > first.x + first.width
             elif position == 'left':
-                self.assertLess(geom.x, first.x + first.width)
+                assert geom.x < first.x + first.width
 
             if i + 1 < len(geoms) - 1:
-                self.assertLess(geom.y + geom.height, geoms[i+2].y)
-                self.assertAlmostEqual(geom.height, geoms[i + 2].height, delta=1)
+                assert geom.y + geom.height < geoms[i+2].y
+                assert geom.height == approx(geoms[i + 2].height, abs=1)
 
 
-class SpiralTestCase(I3LayoutScenario):
+class TestSpiral(I3LayoutScenario):
 
     def test_scenario(self):
         self.senario()
+        self._close_all()
 
     def layout(self) -> str:
         ratio, direction = self.layout_params()
@@ -344,24 +344,25 @@ class SpiralTestCase(I3LayoutScenario):
         for i, geom in enumerate(geoms[1:]):
             prev_geom = geoms[i]
             if i % 2 == 0:
-                self.assertGreater(geom.x, prev_geom.x + prev_geom.width)
-                self.assertAlmostEqual(geom.width, (1 - ratio) * (prev_geom.width + geom.width), delta=2)
+                assert geom.x > prev_geom.x + prev_geom.width
+                assert geom.width == approx((1 - ratio) * (prev_geom.width + geom.width), abs=2)
             else:
-                self.assertGreater(geom.y, prev_geom.y + prev_geom.height)
-                self.assertAlmostEqual(geom.height, (1 - ratio) * (prev_geom.height + geom.height), delta=2)
+                assert geom.y > prev_geom.y + prev_geom.height
+                assert geom.height == approx((1 - ratio) * (prev_geom.height + geom.height), abs=2)
 
 
-class CompanionTestCase(I3LayoutScenario):
+class TestCompanion(I3LayoutScenario):
 
     def test_scenario(self):
         self.senario()
+        self._close_all()
 
     def layout(self) -> str:
         odd_companion_ratio, even_companion_ratio, companion_position = self.layout_params()
         return f'companion {odd_companion_ratio} {even_companion_ratio} {companion_position}'
 
     def layout_params(self) -> List:
-        return [0.3, 0.4, 'top']
+        return [0.3, 0.4, 'up']
 
     def alternate_layout(self) -> str:
         return 'hstack'
@@ -374,20 +375,21 @@ class CompanionTestCase(I3LayoutScenario):
         for i, geom in enumerate(geoms[0::2]):
             if len(geoms) % 2 == 0 or i*2+1 < len(geoms):
                 prev_geom = geoms[i*2+1]
-                self.assertEqual(geom.x,prev_geom.x)
-                self.assertGreater(geom.y, prev_geom.y + prev_geom.height)
+                assert geom.x == prev_geom.x
+                assert geom.y > prev_geom.y + prev_geom.height
                 ratio = odd_ratio if i % 2 == 0 else even_ratio
-                self.assertAlmostEqual(geom.height, (1 - ratio) * (prev_geom.height + geom.height), delta=2)
+                assert geom.height == approx((1 - ratio) * (prev_geom.height + geom.height), abs=2)
             else:
-                self.assertAlmostEqual(geom.height, 800, delta=2)
+                assert geom.height == approx(800, abs=2)
             if i > 0:
-                self.assertGreater(geom.x, geoms[(i-1)*2].x)
+                assert geom.x > geoms[(i-1)*2].x
 
 
-class ThreeColumnsTestCase(I3LayoutScenario):
+class TestThreeColumns(I3LayoutScenario):
 
     def test_scenario(self):
         self.senario()
+        self._close_all()
 
     def layout(self) -> str:
         ratio_2, ratio_3, max_2, position_2 = self.layout_params()
@@ -410,28 +412,28 @@ class ThreeColumnsTestCase(I3LayoutScenario):
 
         for i, geom in enumerate(column_2):
             if i > 0:
-                self.assertAlmostEqual(geom.height, column_2[i-1].height, delta=1)
+                assert geom.height == approx(column_2[i-1].height, abs=1)
             if position_2 == 'left':
-                self.assertLess(geom.x, main.x)
+                assert geom.x < main.x
             else:
-                self.assertGreater(geom.x, main.x)
+                assert geom.x > main.x
 
         for i, geom in enumerate(column_3):
             if i > 0:
-                self.assertAlmostEqual(geom.height, column_3[i-1].height, delta=1)
+                assert geom.height == approx(column_3[i-1].height, abs=1)
             if position_2 == 'left':
-                self.assertGreater(geom.x, main.x)
+                assert geom.x > main.x
             else:
-                self.assertLess(geom.x, main.x)
+                assert geom.x < main.x
 
         if len(geoms) > max_2 + 1:
             column_2_width = column_2[0].width
             column_3_width = column_3[0].width
-            self.assertAlmostEqual(column_2_width, column_3_width, delta=20)
-            self.assertAlmostEqual(main.width, ratio_3 * (main.width + column_2_width + column_3_width), delta=20)
+            assert column_2_width == approx(column_3_width, abs=20)
+            assert main.width == approx(ratio_3 * (main.width + column_2_width + column_3_width), abs=20)
         elif len(geoms) > 1:
             column_2_width = column_2[0].width
-            self.assertAlmostEqual(main.width, ratio_2 * (main.width + column_2_width), delta=2)
+            assert main.width == approx(ratio_2 * (main.width + column_2_width), abs=2)
 
 
 if __name__ == '__main__':

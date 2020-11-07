@@ -13,28 +13,13 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.7, 3.8, 3.9]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install os dependencies
+    - name: Check out
+      uses: actions/checkout@v2
+    - name: Build python docker container with i3
       run: |
-        sudo apt-get install i3
-    - name: Install dependencies
+        docker build --pull --no-cache --rm -t=i3l -f docker/Dockerfile .
+    - name: Run flake8 & pytest in Docker container
       run: |
-        python -m pip install --upgrade pip
-        pip install flake8 python-xlib
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Lint with flake8
-      run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test
-      run: |
-        ./unittest.sh
+        docker run --init -v $PWD:/usr/src i3l ./test/xvfb-runner.sh

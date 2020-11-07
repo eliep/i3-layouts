@@ -1,0 +1,55 @@
+# i3 config file (v4)
+#
+# Please see https://i3wm.org/docs/userguide.html for a complete reference!
+#
+# This config file uses keycodes (bindsym) and was written for the QWERTY
+# layout.
+#
+# To get a config file with the same key positions, but for your current
+# layout, use the i3-config-wizard
+# 
+set $mod Mod4
+
+# Font for window titles. Will also be used by the bar unless a different font
+# is used in the bar {} block below.
+font pango:monospace 8
+
+set $bg-color #81a1c1
+set $border-color #d08770
+set $inactive-bg-color #3b4252
+set $urgent-bg-color #bf616a
+set $text-color #4c566a
+set $inactive-text-color #d8dee9
+set $urgent-text-color #2e3440
+
+#                       border              background         text                 indicator
+client.focused          $bg-color           $bg-color          $text-color          $inactive-bg-color $border-color
+client.unfocused        $inactive-bg-color  $inactive-bg-color $inactive-text-color #00ff00 $bg-color
+client.focused_inactive $inactive-bg-color  $inactive-bg-color $inactive-text-color #00ff00 $inactive-text-color
+client.urgent           $urgent-bg-color    $urgent-bg-color   $text-color          #00ff00 $urgent-bg-color
+
+# use Mouse+Mod1 to drag floating windows to their wanted position
+floating_modifier Mod1
+
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8"
+set $ws9 "9"
+set $ws10 "10"
+
+# reload the configuration file
+bindsym Mod1+Shift+c reload
+# restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
+bindsym Mod1+Shift+r restart
+
+bindsym Mod1+r mode "resize"
+
+new_window 1pixel
+for_window [class="move-window"] move to workspace 2
+bindsym g exec i3-msg -t send_tick "i3-layouts test 72"
+

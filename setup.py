@@ -22,6 +22,9 @@ setuptools.setup(
     install_requires=[
       'i3ipc'
     ],
+    tests_require=[
+      'python-xlib'
+    ],
     entry_points={
         'console_scripts': ['i3-layouts=i3l.cli:main']
     },

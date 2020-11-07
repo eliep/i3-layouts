@@ -18,7 +18,7 @@ fi
 XPID=$!
 sleep 0.5
 
-DISPLAY=:$PORT $I3 -c ./test/config/i3/config-d all -V &
+DISPLAY=:$PORT $I3 -c ./test/config/i3/config -d all -V &
 I3PID=$!
 sleep 2
 

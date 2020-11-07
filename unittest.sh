@@ -18,9 +18,9 @@ fi
 XPID=$!
 sleep 0.5
 
-DISPLAY=:$PORT $I3 -c ./test/config/i3/config > /dev/null 2>&1 &
+DISPLAY=:$PORT $I3 -c ./test/config/i3/config-d all -V &
 I3PID=$!
-sleep 0.5
+sleep 2
 
 PYTHONPATH=. DISPLAY=:$PORT python ./i3l/connect.py --debug &
 I3LAYOUTPID=$!

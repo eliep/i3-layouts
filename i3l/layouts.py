@@ -15,6 +15,7 @@ class LayoutName(Enum):
     SPIRAL = 'spiral'
     THREE_COLUMNS = '3columns'
     COMPANION = 'companion'
+    TABBED = 'tabbed'
 
 
 class HorizontalPosition(Enum):
@@ -100,6 +101,8 @@ class Layout:
             return ThreeColumns(workspace_name, params)
         elif layout_name == LayoutName.COMPANION:
             return Companion(workspace_name, params)
+        elif layout_name == LayoutName.TABBED:
+            return Tabbed(workspace_name, params)
 
 
 class Stack(Layout):
@@ -261,6 +264,21 @@ class Companion(Layout):
         return self.companion_position == AlternateVerticalPosition.UP or \
             (self.companion_position == AlternateVerticalPosition.ALTUP and (len(ctx.containers) / 2) % 2 == 1) or \
             (self.companion_position == AlternateVerticalPosition.ALTDOWN and (len(ctx.containers) / 2) % 2 == 0)
+
+
+class Tabbed(Layout):
+
+    def __init__(self, workspace_name: str, params: List[Any]):
+        super().__init__(LayoutName.TABBED, workspace_name)
+
+    def _params(self) -> List[Any]:
+        return []
+
+    def anchor_mark(self) -> str:
+        return self.mark_main()
+
+    def _update(self, context: Context):
+        context.exec(f'layout tabbed')
 
 
 class ThreeColumns(Layout):

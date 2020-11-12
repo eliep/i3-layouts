@@ -15,6 +15,7 @@ class RebuildCause(Enum):
     LAYOUT_CHANGE_SPIRAL = 'layout_change_spiral'
     LAYOUT_CHANGE_COMPANION = 'layout_change_companion'
     LAYOUT_CHANGE_3COLUMNS = 'layout_change_3columns'
+    LAYOUT_CHANGE_TABBED = 'layout_change_tabbed'
     WORKSPACE_FOCUS = 'workspace_focus'
     WINDOW_CLOSE = 'window_close'
     WINDOW_MOVE = 'window_move'

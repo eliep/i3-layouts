@@ -14,6 +14,8 @@ Each layout implemented comes with its own set of parameters.
 - `spiral`: each new windows split the previous one, split direction alternates between
 horizontal and vertical.  
 ![spiral](./img/spiral.png)
+- `2columns`: two vertical stacks of equally sized windows.
+![2columns](./img/2columns.png)
 - `3columns`: one main windows with two vertical stacks of windows.
 ![3columns](./img/3columns.png)
 - `companion`: each columns is made of one main window and one smaller window.
@@ -113,18 +115,18 @@ These parameters must be given is the order described below.
 #### vstack
 One main windows with a vertical stack of windows.
 
-* **main stack ratio** (float between `0` and `1`, default `0.5`): ratio of screen width used 
-by the main stack
+* **main window ratio** (float between `0` and `1`, default `0.5`): ratio of screen width used 
+by the main window
 * **secondary stack position** (`right` or `left`, default `right`): vertical stack position 
-relative to the main stack
+relative to the main window
 
 #### hstack
 One main windows with an horizontal stack of windows.
 
-* **main stack ratio** (float between `0` and `1`, default `0.5`): ratio of screen height used 
-by the main stack
+* **main window ratio** (float between `0` and `1`, default `0.5`): ratio of screen height used 
+by the window stack
 * **secondary stack position** (`up` or `down`, default `down`): horizontal stack position 
-relative to the main stack
+relative to the main window
 
 #### spiral
 Each new windows split the previous one, split direction alternates between
@@ -136,21 +138,28 @@ the remaining is used by the new container.
 * **screen direction** (`inside` or `outside`, default `inside`): 
 whether new container should be added towards the inside of the screen or the outside.
 
+#### 2columns
+Two vertical stacks of equally sized windows.
+New window position alternates between the first and second stack.
+
+* **first stack position** (`right` or `left`, default `left`): first stack position 
+relative to the second stack.
+
 #### 3columns
 One main windows with two vertical stacks of windows.
 
-* **main stack ratio** [two columns] (float between `0` and `1`, default `0.5`): 
-ratio of screen width used by the main stack when only two columns are present
+* **main window ratio** [two columns] (float between `0` and `1`, default `0.5`): 
+ratio of screen width used by the main window when only two columns are present
 * **main stack ratio** [three columns] (float between `0` and `1`, default `0.5`): 
-ratio of screen width used by the main stack when three columns are present. Width left
+ratio of screen width used by the main window when three columns are present. Width left
 is distributed equally between the second and third columns
 * **max number of row in the second columns** (int, default `0`): 
 the third columns is created only when the second column reach this number of container. 
 If `0` is given new container position alternate between the second and third columns.
-* **second columns position** (`right` or `left`, default `right`): second column position 
-relative to the main stack. Note that the third column will have the opposite position 
-(if the second columns is on the left of the main stack, the third one will be on the right of 
-the main stack)
+* **second column position** (`right` or `left`, default `right`): second column position 
+relative to the main window. Note that the third column will have the opposite position 
+(if the second columns is on the left of the main window, the third one will be on the right of 
+the main window)
 
 #### companion
 Each columns is made of one main window and one smaller window (called companion container below).

@@ -23,6 +23,9 @@ class HorizontalPosition(Enum):
     RIGHT = 'right'
     LEFT = 'left'
 
+    def opposite(self):
+        return HorizontalPosition.RIGHT if self == HorizontalPosition.LEFT else HorizontalPosition.LEFT
+
 
 class VerticalPosition(Enum):
     UP = 'up'
@@ -99,7 +102,7 @@ class Layout:
         elif layout_name == LayoutName.SPIRAL:
             return Spiral(workspace_name, params)
         elif layout_name == LayoutName.TWO_COLUMNS:
-            return TwoColumns(workspace_name)
+            return TwoColumns(workspace_name, params)
         elif layout_name == LayoutName.THREE_COLUMNS:
             return ThreeColumns(workspace_name, params)
         elif layout_name == LayoutName.COMPANION:
@@ -286,8 +289,14 @@ class Tabbed(Layout):
 
 class TwoColumns(Layout):
 
-    def __init__(self, workspace_name: str):
+    def __init__(self, workspace_name: str, params: List[Any]):
         super().__init__(LayoutName.TWO_COLUMNS, workspace_name)
+        try:
+            self.first_column_position = HorizontalPosition(params[0]) if len(params) > 0 else HorizontalPosition.LEFT
+        except ValueError:
+            self.first_column_position = HorizontalPosition.LEFT
+            self._warn_wrong_parameters(params)
+        self.second_column_position = self.first_column_position.opposite()
 
     def _params(self) -> List[Any]:
         return []
@@ -297,10 +306,10 @@ class TwoColumns(Layout):
 
     def _update(self, context: Context):
         if len(context.containers) % 2 == 0:
-            context.exec(f'[con_id="{context.focused.id}"] move right')
+            context.exec(f'[con_id="{context.focused.id}"] move {self.second_column_position.value}')
         else:
-            context.exec(f'[con_id="{context.focused.id}"] move right')
-            context.exec(f'[con_id="{context.focused.id}"] move left')
+            context.exec(f'[con_id="{context.focused.id}"] move {self.second_column_position.value}')
+            context.exec(f'[con_id="{context.focused.id}"] move {self.first_column_position.value}')
         if len(context.containers) <= 2:
             context.exec(f'split vertical')
 

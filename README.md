@@ -8,18 +8,30 @@ Each layout implemented comes with its own set of parameters.
 
 `i3-layouts` comes with 5 configurable layouts: 
 - `vstack`: one main windows with a vertical stack of windows.
+
 ![vstack](./img/vstack.png)
+
 - `hstack`: one main windows with an horizontal stack of windows.
+
 ![hstack](./img/hstack.png)
+
 - `spiral`: each new windows split the previous one, split direction alternates between
 horizontal and vertical.  
+
 ![spiral](./img/spiral.png)
+
 - `2columns`: two vertical stacks of equally sized windows.
+
 ![2columns](./img/2columns.png)
+
 - `3columns`: one main windows with two vertical stacks of windows.
+
 ![3columns](./img/3columns.png)
+
 - `companion`: each columns is made of one main window and one smaller window.
+
 ![companion](./img/companion.png)
+
 
 The [Layout section](#layouts) details the parameters for each one of these layouts. 
 

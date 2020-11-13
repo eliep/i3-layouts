@@ -14,6 +14,7 @@ class LayoutName(Enum):
     HSTACK = 'hstack'
     SPIRAL = 'spiral'
     THREE_COLUMNS = '3columns'
+    TWO_COLUMNS = '2columns'
     COMPANION = 'companion'
     TABBED = 'tabbed'
 
@@ -76,9 +77,9 @@ class Layout:
         if len(containers) > 1:
             context.exec(f'[con_id="{con.id}"] move window to mark {self.anchor_mark()}')
 
+        self._update(context)
         mark = self.mark_main() if len(containers) == 1 else self.mark_last()
         context.exec(f'mark {mark}')
-        self._update(context)
 
     def _update(self, context: Context):
         pass
@@ -97,12 +98,14 @@ class Layout:
             return HStack(workspace_name, params)
         elif layout_name == LayoutName.SPIRAL:
             return Spiral(workspace_name, params)
+        elif layout_name == LayoutName.TWO_COLUMNS:
+            return TwoColumns(workspace_name)
         elif layout_name == LayoutName.THREE_COLUMNS:
             return ThreeColumns(workspace_name, params)
         elif layout_name == LayoutName.COMPANION:
             return Companion(workspace_name, params)
         elif layout_name == LayoutName.TABBED:
-            return Tabbed(workspace_name, params)
+            return Tabbed(workspace_name)
 
 
 class Stack(Layout):
@@ -268,7 +271,7 @@ class Companion(Layout):
 
 class Tabbed(Layout):
 
-    def __init__(self, workspace_name: str, params: List[Any]):
+    def __init__(self, workspace_name: str):
         super().__init__(LayoutName.TABBED, workspace_name)
 
     def _params(self) -> List[Any]:
@@ -279,6 +282,27 @@ class Tabbed(Layout):
 
     def _update(self, context: Context):
         context.exec(f'layout tabbed')
+
+
+class TwoColumns(Layout):
+
+    def __init__(self, workspace_name: str):
+        super().__init__(LayoutName.TWO_COLUMNS, workspace_name)
+
+    def _params(self) -> List[Any]:
+        return []
+
+    def anchor_mark(self) -> str:
+        return self.mark_main()
+
+    def _update(self, context: Context):
+        if len(context.containers) % 2 == 0:
+            context.exec(f'[con_id="{context.focused.id}"] move right')
+        else:
+            context.exec(f'[con_id="{context.focused.id}"] move right')
+            context.exec(f'[con_id="{context.focused.id}"] move left')
+        if len(context.containers) <= 2:
+            context.exec(f'split vertical')
 
 
 class ThreeColumns(Layout):

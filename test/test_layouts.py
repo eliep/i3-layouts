@@ -3,7 +3,6 @@ import sys
 import unittest
 from typing import List, Callable
 
-import pytest
 from pytest import approx
 from Xlib import X
 from Xlib.display import Display
@@ -434,6 +433,40 @@ class TestThreeColumns(I3LayoutScenario):
         elif len(geoms) > 1:
             column_2_width = column_2[0].width
             assert main.width == approx(ratio_2 * (main.width + column_2_width), abs=2)
+
+
+class TestTwoColumns(I3LayoutScenario):
+
+    def test_scenario(self):
+        self.senario()
+        self._close_all()
+
+    def layout(self) -> str:
+        return f'2columns'
+
+    def layout_params(self) -> List:
+        return []
+
+    def alternate_layout(self) -> str:
+        return 'hstack'
+
+    def validate(self, args):
+        windows = self.workspaces.windows()
+        geoms = [self._get_window_geometry(window) for window in windows]
+
+        column_1, column_2 = geoms[::2], geoms[1::2]
+
+        for i, geom in enumerate(column_1[1:]):
+            assert geom.height == approx(column_1[i].height, abs=1)
+            assert geom.y > column_1[i].y + column_1[i].height
+            assert geom.x == column_1[i].x
+            if len(column_2) > 0:
+                assert geom.x < column_2[0].x
+
+        for i, geom in enumerate(column_2[1:]):
+            assert geom.height == approx(column_2[i].height, abs=1)
+            assert geom.y > column_2[i].y + column_2[i].height
+            assert geom.x == column_2[i].x
 
 
 if __name__ == '__main__':

@@ -19,6 +19,9 @@ class LayoutName(Enum):
     TWO_COLUMNS = '2columns'
     COMPANION = 'companion'
     TABBED = 'tabbed'
+    SPLITV = 'splitv'
+    SPLITH = 'splith'
+    STACKING = 'stacking'
 
 
 class HorizontalPosition(Enum):
@@ -181,6 +184,12 @@ class Layout:
             return Companion(workspace_name, params)
         elif layout_name == LayoutName.TABBED:
             return Tabbed(workspace_name)
+        elif layout_name == LayoutName.SPLITV:
+            return SplitV(workspace_name)
+        elif layout_name == LayoutName.SPLITH:
+            return SplitH(workspace_name)
+        elif layout_name == LayoutName.STACKING:
+            return Stacking(workspace_name)
 
 
 class Stack(Layout):
@@ -344,24 +353,6 @@ class Companion(Layout):
             (self.companion_position == AlternateVerticalPosition.ALTDOWN and (len(ctx.containers) / 2) % 2 == 0)
 
 
-class Tabbed(Layout):
-
-    def __init__(self, workspace_name: str):
-        super().__init__(LayoutName.TABBED, workspace_name)
-
-    def _params(self) -> List[Any]:
-        return []
-
-    def is_i3(self) -> bool:
-        return True
-
-    def anchor_mark(self) -> str:
-        return self.mark_main()
-
-    def _update(self, context: Context):
-        context.exec('layout tabbed')
-
-
 class TwoColumns(Layout):
 
     def __init__(self, workspace_name: str, params: List[Any]):
@@ -464,6 +455,48 @@ class ThreeColumns(Layout):
         else:
             context.exec(f'[con_id="{context.focused.id}"] move left')
             context.exec(f'[con_id="{context.focused.id}"] move left')
+
+
+class I3Layout(Layout):
+
+    def __init__(self, layout_name: LayoutName, workspace_name: str):
+        super().__init__(layout_name, workspace_name)
+
+    def _params(self) -> List[Any]:
+        return []
+
+    def is_i3(self) -> bool:
+        return True
+
+    def anchor_mark(self) -> str:
+        return self.mark_main()
+
+    def _update(self, context: Context):
+        context.exec(f'layout {self.name.value}')
+
+
+class Tabbed(I3Layout):
+
+    def __init__(self, workspace_name: str):
+        super().__init__(LayoutName.TABBED, workspace_name)
+
+
+class SplitV(I3Layout):
+
+    def __init__(self, workspace_name: str):
+        super().__init__(LayoutName.SPLITV, workspace_name)
+
+
+class SplitH(I3Layout):
+
+    def __init__(self, workspace_name: str):
+        super().__init__(LayoutName.SPLITH, workspace_name)
+
+
+class Stacking(I3Layout):
+
+    def __init__(self, workspace_name: str):
+        super().__init__(LayoutName.STACKING, workspace_name)
 
 
 class Layouts:

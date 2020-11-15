@@ -1,4 +1,6 @@
 import logging
+import sys
+from math import sqrt
 from enum import Enum
 from typing import List, Optional, Any, Union
 
@@ -23,7 +25,7 @@ class HorizontalPosition(Enum):
     RIGHT = 'right'
     LEFT = 'left'
 
-    def opposite(self):
+    def opposite(self) -> 'HorizontalPosition':
         return HorizontalPosition.RIGHT if self == HorizontalPosition.LEFT else HorizontalPosition.LEFT
 
 
@@ -63,6 +65,9 @@ class Layout:
         logger.warning(f'[layouts] Invalid {self.name.value} layout parameters {params}, '
                        f'using default {self._params()}')
 
+    def is_i3(self) -> bool:
+        return False
+
     def _params(self) -> List[Any]:
         pass
 
@@ -86,6 +91,73 @@ class Layout:
 
     def _update(self, context: Context):
         pass
+
+    @classmethod
+    def move(cls, context: Context, direction: str):
+        origin = context.focused
+        candidates = cls._destination_candidates(context, direction, origin)
+        destination = cls._shortest_distance(origin, candidates)
+        if destination is not None:
+            cls._switch_marks(context, origin, destination)
+            cls._switch_window_numbers(context, origin, destination)
+            context.exec(f'swap container with con_id {destination.id}')
+
+    @classmethod
+    def _destination_candidates(cls, context: Context, direction: str, origin: Con) -> List[Con]:
+        def vertical_overlap(con1: Con, con2: Con):
+            return con1.rect.y <= con2.rect.y <= con1.rect.y + con1.rect.height \
+                or con1.rect.y <= con2.rect.y + con2.rect.height <= con1.rect.y + con1.rect.height
+
+        def horizontal_overlap(con1: Con, con2: Con):
+            return con1.rect.x <= con2.rect.x <= con1.rect.x + con1.rect.width \
+                or con1.rect.x <= con2.rect.x + con2.rect.width < con1.rect.x + con1.rect.width
+
+        def overlap(direction: str):
+            return horizontal_overlap if direction in ['up', 'down'] else vertical_overlap
+
+        factor = -1 if direction in ['right', 'down'] else 1
+
+        candidates = []
+        if direction in ['left', 'right']:
+            candidates = [con for con in context.containers
+                          if factor * con.rect.x < factor * origin.rect.x and overlap(direction)(origin, con)]
+        elif direction in ['up', 'down']:
+            candidates = [con for con in context.containers
+                          if factor * con.rect.y < factor * origin.rect.y and overlap(direction)(origin, con)]
+        return candidates
+
+    @classmethod
+    def _switch_marks(cls, context: Context, origin: Con, destination: Con):
+        origin_marks = [mark for mark in origin.marks if mark.startswith('i3l')]
+        for mark in destination.marks:
+            if mark.startswith('i3l'):
+                context.exec(f'[con_id="{origin.id}"] mark {mark}')
+        for mark in origin_marks:
+            context.exec(f'[con_id="{destination.id}"] mark {mark}')
+
+    @classmethod
+    def _switch_window_numbers(cls, context: Context, origin: Con, destination: Con):
+        numbers = context.workspace_sequence.window_numbers
+        for con_id, number in numbers.items():
+            if con_id == origin.id:
+                numbers[destination.id] = number
+            elif con_id == destination.id:
+                numbers[origin.id] = number
+
+    @classmethod
+    def _shortest_distance(cls, origin: Con, containers: List[Con]) -> Optional[Con]:
+        shortest_dist = sys.maxsize
+        destination = None
+        for con in containers:
+            dist = cls.container_distance(origin, con)
+            if dist < shortest_dist and not (origin.rect.x == con.rect.x and origin.rect.y == con.rect.y):
+                destination = con
+                shortest_dist = dist
+        return destination
+
+    @staticmethod
+    def container_distance(con1: Con, con2: Con) -> float:
+        return sqrt((con1.rect.x - con2.rect.x)**2 + (con1.rect.y - con2.rect.y)**2)
 
     @staticmethod
     def create(name: str, params: List[Any], workspace_name: str) -> Optional['Layout']:
@@ -280,11 +352,14 @@ class Tabbed(Layout):
     def _params(self) -> List[Any]:
         return []
 
+    def is_i3(self) -> bool:
+        return True
+
     def anchor_mark(self) -> str:
         return self.mark_main()
 
     def _update(self, context: Context):
-        context.exec(f'layout tabbed')
+        context.exec('layout tabbed')
 
 
 class TwoColumns(Layout):

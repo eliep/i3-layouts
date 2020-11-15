@@ -1,8 +1,10 @@
+from typing import List
+
 from i3ipc import Connection, TickEvent
 from i3ipc.events import WorkspaceEvent, WindowEvent
 import logging
 
-from i3l.state import State, RebuildCause
+from i3l.state import State, RebuildCause, Context
 from i3l.layouts import Layouts, Layout
 
 logger = logging.getLogger(__name__)
@@ -10,26 +12,41 @@ logger = logging.getLogger(__name__)
 
 def on_tick(layouts: Layouts, state: State):
 
+    def handle_move_tick(context: Context, action_params: List[str]):
+        if layouts.exists_for(context.workspace.name) and not layouts.get(context.workspace.name).is_i3():
+            logger.debug(f'  [ipc] workspace layouts exists for {context.workspace.name}')
+            layout = layouts.get(context.workspace.name)
+            layout.move(context, action_params[0])
+        else:
+            context.exec(f'move {action_params[0]}')
+
+    def handle_layout_tick(context: Context, action_name: str, action_params: List[str]):
+        layout = Layout.create(action_name, action_params, context.workspace.name)
+        if layout is not None:
+            logger.debug(f'  [ipc] tick event - set workspace layout to {action_name}')
+            layouts.add(layout)
+            state.add_workspace_sequence(context.workspace.name)
+            state.start_rebuild(RebuildCause.layout_change(action_name), context,
+                                layout.mark_main(), layout.mark_last())
+        else:
+            logger.debug('  [ipc] tick event - unset workspace layout')
+            layouts.remove(context.workspace.name)
+
     def _on_tick(i3l: Connection, e: TickEvent):
         logger.debug(f'[ipc] tick event - payload:{e.payload}')
         if not e.payload.startswith('i3-layouts'):
             return
         context = state.sync_context(i3l)
         tokens = e.payload.split(' ')
-        layout_name = tokens[1]
-        layout_params = tokens[2:]
-        if layout_name == 'rebuild':
-            return
-
-        layout = Layout.create(layout_name, layout_params, context.workspace.name)
-        if layout is not None:
-            layouts.add(layout)
-            state.add_workspace_sequence(context.workspace.name)
-            state.start_rebuild(i3l, RebuildCause.layout_change(layout_name), context,
-                                layout.mark_main(), layout.mark_last())
+        action_name = tokens[1]
+        action_params = tokens[2:]
+        if action_name == 'rebuild':
+            pass
+        elif action_name == 'move':
+            handle_move_tick(context, action_params)
         else:
-            logger.debug('  [ipc] tick event - remove workspace layout')
-            layouts.remove(context.workspace.name)
+            handle_layout_tick(context, action_name, action_params)
+
     return _on_tick
 
 
@@ -44,14 +61,14 @@ def on_workspace_focus(layouts: Layouts, state: State):
             if state.prev_workspace_name != e.current.name and sequence.is_stale:
                 layout = layouts.get(context.workspace.name)
                 con_id = sequence.stale_con_id
-                state.start_rebuild(i3l, RebuildCause.WORKSPACE_FOCUS, context,
+                state.start_rebuild(RebuildCause.WORKSPACE_FOCUS, context,
                                     layout.mark_main(), layout.mark_last(), con_id)
                 sequence.set_stale(False)
             elif state.prev_workspace_name != e.current.name:
-                state.end_rebuild(i3l, RebuildCause.WORKSPACE_FOCUS)
+                state.end_rebuild(context, RebuildCause.WORKSPACE_FOCUS)
         else:
             logger.debug(f'  [ipc] no workspace layouts exists for {e.current.name}')
-            state.end_rebuild(i3l, RebuildCause.WORKSPACE_FOCUS)
+            state.end_rebuild(context, RebuildCause.WORKSPACE_FOCUS)
 
         state.prev_workspace_name = e.current.name
         if e.old:
@@ -74,7 +91,7 @@ def on_window_close(layouts: Layouts, state: State):
             state.remove_closed_container(e.container.window)
             return
         layout = layouts.get(context.workspace.name)
-        state.start_rebuild(i3l, RebuildCause.WINDOW_CLOSE, context,
+        state.start_rebuild(RebuildCause.WINDOW_CLOSE, context,
                             layout.mark_main(), layout.mark_last(), e.container.id)
 
     return _on_window_close
@@ -95,7 +112,7 @@ def on_window_move(layouts: Layouts, state: State):
             sequence.set_stale(True, e.container.id)
         if layouts.exists_for(context.workspace.name):
             layout = layouts.get(context.workspace.name)
-            state.start_rebuild(i3l, RebuildCause.WINDOW_MOVE, context,
+            state.start_rebuild(RebuildCause.WINDOW_MOVE, context,
                                 layout.mark_main(), layout.mark_last(), e.container.id)
 
     return _on_window_move
@@ -116,9 +133,9 @@ def on_window_new(layouts: Layouts, state: State):
         layout.update(context, e.container)
 
         if not state.has_rebuild_in_progress():
-            state.end_rebuild(i3l, RebuildCause.WINDOW_NEW)
+            state.end_rebuild(context, RebuildCause.WINDOW_NEW)
         elif state.is_rebuild_finished():
-            state.end_rebuild(i3l)
+            state.end_rebuild(context)
         else:
             state.recreate_next_window(context)
 

@@ -4,7 +4,7 @@ import subprocess
 from enum import Enum
 from typing import Dict, List, Optional
 
-from i3ipc import Con, Connection, CommandReply
+from i3ipc import Con, Connection, CommandReply, TickReply
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +78,9 @@ class Context:
     def exec(self, payload: str) -> List[CommandReply]:
         return self.i3l.command(payload)
 
+    def send_tick(self, payload: str) -> TickReply:
+        return self.i3l.send_tick(payload)
+
     def xdo_unmap_window(self, window_id: Optional[int] = None):
         if window_id is None:
             window_id = self.focused.window
@@ -103,14 +106,14 @@ class RebuildAction:
         return [con.window for con in containers
                 if con_id == 0 or workspace_sequence.get_order(con.id) >= workspace_sequence.get_order(con_id)]
 
-    def start_rebuild(self, i3l: Connection, context: Context, rebuild_cause: RebuildCause,
+    def start_rebuild(self, context: Context, rebuild_cause: RebuildCause,
                       main_mark: str, last_mark: str, con_id: int = 0):
         if rebuild_cause is not None:
             self.rebuild_cause = rebuild_cause
 
         containers = context.sorted_containers()
         if len(containers) == 0 or (con_id != 0 and con_id not in context.workspace_sequence.window_numbers):
-            self.end_rebuild(i3l)
+            self.end_rebuild(context)
             return
 
         self.containers_to_recreate = self._containers_after(con_id, containers, context.workspace_sequence)
@@ -123,14 +126,14 @@ class RebuildAction:
             context.xdo_map_window(container_window_id)
         elif len(containers) == 1:
             context.exec(f'[con_id="{containers[-1].id}"] mark {main_mark}')
-            self.end_rebuild(i3l)
+            self.end_rebuild(context)
         else:
             context.exec(f'[con_id="{containers[-1].id}"] mark {last_mark}')
-            self.end_rebuild(i3l)
+            self.end_rebuild(context)
 
-    def end_rebuild(self, i3l: Connection, cause: RebuildCause = None):
+    def end_rebuild(self, context: Context, cause: RebuildCause = None):
         rebuild_cause = self.rebuild_cause if cause is None else cause
-        i3l.send_tick(f'i3-layouts rebuild {rebuild_cause.value}')
+        context.send_tick(f'i3-layouts rebuild {rebuild_cause.value}')
         if cause is None or self.rebuild_cause is None:
             self.rebuild_cause = None
 
@@ -167,10 +170,10 @@ class State:
     def rebuild_closed_container(self, window_id: int):
         return window_id in self.rebuild_action.containers_to_close
 
-    def start_rebuild(self, i3l: Connection, rebuild_cause: RebuildCause, context: Context,
+    def start_rebuild(self, rebuild_cause: RebuildCause, context: Context,
                       main_mark: str, last_mark: str, con_id: int = 0):
         logger.debug(f'[state] rebuilding for {rebuild_cause}')
-        self.rebuild_action.start_rebuild(i3l, context, rebuild_cause, main_mark, last_mark, con_id)
+        self.rebuild_action.start_rebuild(context, rebuild_cause, main_mark, last_mark, con_id)
 
     def recreate_next_window(self, context: Context):
         container_window_id = self.rebuild_action.containers_to_recreate.pop(0)
@@ -179,8 +182,8 @@ class State:
     def remove_closed_container(self, window_id: int):
         self.rebuild_action.containers_to_close.remove(window_id)
 
-    def end_rebuild(self, i3l: Connection, cause: RebuildCause = None):
-        self.rebuild_action.end_rebuild(i3l, cause)
+    def end_rebuild(self, context: Context, cause: RebuildCause = None):
+        self.rebuild_action.end_rebuild(context, cause)
 
     def get_workspace_sequence(self, workspace_name: str) -> Optional[WorkspaceSequence]:
         return self.workspace_sequences[workspace_name] if workspace_name in self.workspace_sequences else None

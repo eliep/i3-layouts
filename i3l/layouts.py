@@ -305,13 +305,32 @@ class TwoColumns(Layout):
         return self.mark_main()
 
     def _update(self, context: Context):
-        if len(context.containers) % 2 == 0:
-            context.exec(f'[con_id="{context.focused.id}"] move {self.second_column_position.value}')
-        else:
-            context.exec(f'[con_id="{context.focused.id}"] move {self.second_column_position.value}')
-            context.exec(f'[con_id="{context.focused.id}"] move {self.first_column_position.value}')
         if len(context.containers) <= 2:
-            context.exec(f'split vertical')
+            context.exec(f'[con_id="{context.focused.id}"] move {self.second_column_position.value}')
+            context.exec('split vertical')
+            return
+
+        sorted_containers = context.sorted_containers()
+        candidates = sorted_containers[1:-1:2] if len(context.containers) % 2 == 0 else sorted_containers[:-1:2]
+        self._move_container_to_lowest(context, candidates)
+
+    def _move_container_to_lowest(self, context: Context, candidates: List[Con]):
+        lowest_mark = 'i3l:lowest'
+        lowest = self._lowest(candidates)
+        if lowest is not None:
+            context.exec(f'[con_id="{lowest.id}"] mark --add {lowest_mark}')
+        context.exec(f'move container to mark {lowest_mark}')
+        context.exec(f'unmark {lowest_mark}')
+
+    @classmethod
+    def _lowest(cls, containers: List[Con]) -> Optional[Con]:
+        lower_y = 0
+        destination = None
+        for con in containers:
+            if con.rect.y >= lower_y:
+                destination = con
+                lower_y = con.rect.y
+        return destination
 
 
 class ThreeColumns(Layout):

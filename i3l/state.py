@@ -38,8 +38,8 @@ class WorkspaceSequence:
         self.window_count += 1
         self.window_numbers[container.id] = self.window_count
 
-    def get_order(self, con_id: int) -> int:
-        return self.window_numbers[con_id]
+    def get_order(self, con_id: int) -> Optional[int]:
+        return self.window_numbers[con_id] if con_id in self.window_numbers else None
 
     def set_stale(self, stale: bool, con_id: int = 0):
         self.is_stale = stale
@@ -154,12 +154,25 @@ class State:
         tree = i3l.get_tree()
         focused = tree.find_focused()
         workspace = focused.workspace()
-        containers = [container for container in workspace if container.window is not None and container.type == 'con']
+        containers = [container for container in workspace if self.is_layout_container(container)]
         containers = sorted(containers, key=lambda container: container.window)
 
-        workspace_sequence = self.get_workspace_sequence(workspace.name)
+        workspace_sequence = self._sync_workspace_sequence(containers, workspace)
         self.context = Context(i3l, workspace, focused, containers, workspace_sequence)
         return self.context
+
+    def _sync_workspace_sequence(self, containers: List[Con], workspace: Con):
+        workspace_sequence = self.get_workspace_sequence(workspace.name)
+        if workspace_sequence is not None:
+            for container in containers:
+                if workspace_sequence.get_order(container.id) is None:
+                    workspace_sequence.set_order(container)
+        return workspace_sequence
+
+    @staticmethod
+    def is_layout_container(container: Con):
+        return container.window is not None and container.type == 'con' \
+            and container.floating != 'auto_on' and container.floating != 'user_on'
 
     def has_rebuild_in_progress(self):
         return self.rebuild_action.rebuild_cause is not None

@@ -162,34 +162,9 @@ class Layout:
     def container_distance(con1: Con, con2: Con) -> float:
         return sqrt((con1.rect.x - con2.rect.x)**2 + (con1.rect.y - con2.rect.y)**2)
 
-    @staticmethod
-    def create(name: str, params: List[Any], workspace_name: str) -> Optional['Layout']:
-        try:
-            layout_name = LayoutName(name)
-        except ValueError:
-            logger.error(f'[layouts] Invalid layout name: {name}. Skipping')
-            return None
-
-        if layout_name == LayoutName.VSTACK:
-            return VStack(workspace_name, params)
-        elif layout_name == LayoutName.HSTACK:
-            return HStack(workspace_name, params)
-        elif layout_name == LayoutName.SPIRAL:
-            return Spiral(workspace_name, params)
-        elif layout_name == LayoutName.TWO_COLUMNS:
-            return TwoColumns(workspace_name, params)
-        elif layout_name == LayoutName.THREE_COLUMNS:
-            return ThreeColumns(workspace_name, params)
-        elif layout_name == LayoutName.COMPANION:
-            return Companion(workspace_name, params)
-        elif layout_name == LayoutName.TABBED:
-            return Tabbed(workspace_name)
-        elif layout_name == LayoutName.SPLITV:
-            return SplitV(workspace_name)
-        elif layout_name == LayoutName.SPLITH:
-            return SplitH(workspace_name)
-        elif layout_name == LayoutName.STACKING:
-            return Stacking(workspace_name)
+    @classmethod
+    def create(cls, workspace_name: str, params: List[Any]) -> Optional['Layout']:
+        pass
 
 
 class Stack(Layout):
@@ -257,6 +232,10 @@ class VStack(Stack):
     def _default_second_axe_position(self) -> HorizontalPosition:
         return HorizontalPosition.RIGHT
 
+    @classmethod
+    def create(cls, workspace_name: str, params: List[Any]) -> Optional['Layout']:
+        return VStack(workspace_name, params)
+
 
 class HStack(Stack):
 
@@ -277,6 +256,10 @@ class HStack(Stack):
 
     def _default_second_axe_position(self) -> VerticalPosition:
         return VerticalPosition.UP
+
+    @classmethod
+    def create(cls, workspace_name: str, params: List[Any]) -> Optional['Layout']:
+        return HStack(workspace_name, params)
 
 
 class Spiral(Layout):
@@ -311,6 +294,10 @@ class Spiral(Layout):
             context.exec('split vertical')
             ratio = pow(1 - self.main_ratio, len(context.containers) / 2)
             context.exec(f'resize set width {context.workspace_width(ratio)}')
+
+    @classmethod
+    def create(cls, workspace_name: str, params: List[Any]) -> Optional['Layout']:
+        return Spiral(workspace_name, params)
 
 
 class Companion(Layout):
@@ -351,6 +338,10 @@ class Companion(Layout):
         return self.companion_position == AlternateVerticalPosition.UP or \
             (self.companion_position == AlternateVerticalPosition.ALTUP and (len(ctx.containers) / 2) % 2 == 1) or \
             (self.companion_position == AlternateVerticalPosition.ALTDOWN and (len(ctx.containers) / 2) % 2 == 0)
+
+    @classmethod
+    def create(cls, workspace_name: str, params: List[Any]) -> Optional['Layout']:
+        return Companion(workspace_name, params)
 
 
 class TwoColumns(Layout):
@@ -397,6 +388,10 @@ class TwoColumns(Layout):
                 destination = con
                 lower_y = con.rect.y
         return destination
+
+    @classmethod
+    def create(cls, workspace_name: str, params: List[Any]) -> Optional['Layout']:
+        return TwoColumns(workspace_name, params)
 
 
 class ThreeColumns(Layout):
@@ -456,6 +451,10 @@ class ThreeColumns(Layout):
             context.exec(f'[con_id="{context.focused.id}"] move left')
             context.exec(f'[con_id="{context.focused.id}"] move left')
 
+    @classmethod
+    def create(cls, workspace_name: str, params: List[Any]) -> Optional['Layout']:
+        return ThreeColumns(workspace_name, params)
+
 
 class I3Layout(Layout):
 
@@ -480,11 +479,19 @@ class Tabbed(I3Layout):
     def __init__(self, workspace_name: str):
         super().__init__(LayoutName.TABBED, workspace_name)
 
+    @classmethod
+    def create(cls, workspace_name: str, params: List[Any]) -> Optional['Layout']:
+        return Tabbed(workspace_name)
+
 
 class SplitV(I3Layout):
 
     def __init__(self, workspace_name: str):
         super().__init__(LayoutName.SPLITV, workspace_name)
+
+    @classmethod
+    def create(cls, workspace_name: str, params: List[Any]) -> Optional['Layout']:
+        return SplitV(workspace_name)
 
 
 class SplitH(I3Layout):
@@ -492,14 +499,35 @@ class SplitH(I3Layout):
     def __init__(self, workspace_name: str):
         super().__init__(LayoutName.SPLITH, workspace_name)
 
+    @classmethod
+    def create(cls, workspace_name: str, params: List[Any]) -> Optional['Layout']:
+        return SplitH(workspace_name)
+
 
 class Stacking(I3Layout):
 
     def __init__(self, workspace_name: str):
         super().__init__(LayoutName.STACKING, workspace_name)
 
+    @classmethod
+    def create(cls, workspace_name: str, params: List[Any]) -> Optional['Layout']:
+        return Stacking(workspace_name)
+
 
 class Layouts:
+    factory = {
+        LayoutName.VSTACK: VStack,
+        LayoutName.HSTACK: HStack,
+        LayoutName.SPIRAL: Spiral,
+        LayoutName.TWO_COLUMNS: TwoColumns,
+        LayoutName.THREE_COLUMNS: ThreeColumns,
+        LayoutName.COMPANION: Companion,
+        LayoutName.TABBED: Tabbed,
+        LayoutName.SPLITV: SplitV,
+        LayoutName.SPLITH: SplitH,
+        LayoutName.STACKING: Stacking,
+    }
+
     def __init__(self, layouts: List[Layout] = None):
         if layouts is None:
             layouts = []
@@ -520,3 +548,12 @@ class Layouts:
 
     def exists_for(self, workspace_name: str) -> bool:
         return workspace_name in self.layouts
+
+    @classmethod
+    def create(cls, name: str, params: List[Any], workspace_name: str) -> Optional['Layout']:
+        try:
+            layout_name = LayoutName(name)
+            return cls.factory[layout_name].create(workspace_name, params) if layout_name in cls.factory else None
+        except ValueError:
+            logger.error(f'[layouts] Invalid layout name: {name}. Skipping')
+            return None

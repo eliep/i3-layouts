@@ -7,7 +7,7 @@ from i3ipc import Connection, Event
 from i3l.config import WorkspaceLayout
 from i3l.handlers import on_window_new, on_window_close, on_workspace_focus, on_window_move, on_tick
 from i3l.state import State
-from i3l.layouts import Layouts, Layout
+from i3l.layouts import Layouts
 
 
 def connect():
@@ -24,9 +24,9 @@ def connect():
     i3_config = i3.get_config()
     workspace_layouts = WorkspaceLayout.load(i3_config)
     layouts = Layouts([layout for layout in
-                       (Layout.create(workspace_layout.layout_name,
-                                      workspace_layout.layout_params,
-                                      workspace_layout.workspace_name) for workspace_layout in workspace_layouts)
+                       (Layouts.create(workspace_layout.layout_name,
+                                       workspace_layout.layout_params,
+                                       workspace_layout.workspace_name) for workspace_layout in workspace_layouts)
                        if layout is not None])
     state = State(i3)
     i3.on(Event.WORKSPACE_FOCUS, on_workspace_focus(layouts, state))

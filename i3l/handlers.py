@@ -5,7 +5,7 @@ from i3ipc.events import WorkspaceEvent, WindowEvent
 import logging
 
 from i3l.state import State, RebuildCause, Context
-from i3l.layouts import Layouts, Layout
+from i3l.layouts import Layouts
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ def on_tick(layouts: Layouts, state: State):
             context.exec(f'move {action_params[0]}')
 
     def handle_layout_tick(context: Context, action_name: str, action_params: List[str]):
-        layout = Layout.create(action_name, action_params, context.workspace.name)
+        layout = Layouts.create(action_name, action_params, context.workspace.name)
         if layout is not None:
             logger.debug(f'  [ipc] tick event - set workspace layout to {action_name}')
             layouts.add(layout)
@@ -125,6 +125,9 @@ def on_window_new(layouts: Layouts, state: State):
         context = state.sync_context(i3l)
         if not layouts.exists_for(context.workspace.name) or context.workspace_sequence is None:
             logger.debug('  [ipc] window new event - no workspace layout')
+            return
+        if not state.is_layout_container(e.container):
+            logger.debug('  [ipc] window new event - not a layout container')
             return
         context.workspace_sequence.set_order(e.container)
 

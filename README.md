@@ -6,7 +6,7 @@
 `i3-layouts` is a small program that enforces dynamic layout on i3 workspace. 
 Each layout implemented comes with its own set of parameters. 
 
-`i3-layouts` comes with 5 configurable layouts: 
+`i3-layouts` comes with 6 configurable layouts: 
 - `vstack`: one main windows with a vertical stack of windows.
 
 ![vstack](./img/vstack.png)
@@ -77,8 +77,15 @@ in the [Layouts](#layouts) section.
 **Syntax:**
 
 ```
-set $i3l [vstack|hstack|spiral|3columns] <param> ... to workspace [workspace name]
+set $i3l [vstack|hstack|spiral|3columns|2columns|companion] <param> ... to workspace [workspace name]
 ```
+
+It's also possible to use any of i3 existing layout:
+
+```
+set $i3l [tabbed|splitv|splith|stacking] to workspace [workspace name]
+```
+
 
 **Examples:**
 
@@ -89,6 +96,8 @@ set $i3l vstack to workspace $ws1
 set $i3l hstack 0.6 up to workspace $ws2
 set $i3l spiral 0.6 to workspace $ws3
 set $i3l 3columns 0.66 0.5 2 left to workspace $ws4
+set $i3l 2columns right to workspace $ws5
+set $i3l companion 0.3 0.4 up to workspace $ws6
 ```
 
 
@@ -120,6 +129,34 @@ You can also use a keyboard binding in your i3 config file, for example:
 bindsym $mod+s exec i3-msg -t send_tick "i3-layouts vstack 0.6"
 ```
   
+### Moving windows inside the layout
+
+By default, when moving windows, chances are their position will not match the selected layout.
+To keep windows within the layout available positions, `i3-layouts` must manage all `move` command.
+
+So instead of configuring i3 with something like:
+
+```
+bindsym $mod+j move left
+bindsym $mod+k move down
+bindsym $mod+l move up
+bindsym $mod+semicolon move right
+```
+
+`move` commands can be forwarded to `i3-layouts` with `i3-msg`:
+
+```
+bindsym $mod+j exec i3-msg -t send_tick "i3-layouts move left"
+bindsym $mod+k exec i3-msg -t send_tick "i3-layouts move down"
+bindsym $mod+l exec i3-msg -t send_tick "i3-layouts move up"
+bindsym $mod+semicolon exec i3-msg -t send_tick "i3-layouts move right"
+```
+
+With this configuration, if a `move` command is executed on a workspace managed by `i3-layouts`, 
+the moved window will stay within the layout. If the workspace is not managed by `i3-layout`,
+ `i3-layout` will forward the `move` command to `i3`
+
+
 ### Layouts
 Each layout accept some specific parameters. 
 These parameters must be given is the order described below.
@@ -187,11 +224,11 @@ the first column.
 
 ## Limitations
 
-* **User actions (split and move)**: `i3-layouts` do its best to manage the workspace layout, but if you manually 
-split or move a container (with `split vertical|horizontal` for example), 
-new container may be misplaced.
+* **User `split` actions**: `i3-layouts` do its best to manage the workspace layout, but if you manually 
+`split` a container (for example with `split vertical|horizontal`), new container may be misplaced.
+For `move` command to work as expected, see [Moving windows inside the layout](#moving-windows-inside-the-layout)
 * **Redraw**: when container are closed, or moved between workspace, `i3-layouts` needs to reposition
 some if not all containers of a given workspace. Right now, `i3-layouts` use `xdotool` 
-to simulate the recreation of these containers, which is not ideal.
+to simulate the recreation of these containers.
 * **Marks**: to keep track of container position, `i3-layouts` use i3wm marks. 
 More precisely, `i3-layouts` marks the first and last container of each workspace. 

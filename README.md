@@ -52,6 +52,14 @@ To install, simply use `pip`
 $ pip install --user i3-layouts
 ```
 
+
+### Update with pip
+To update, again use `pip`
+
+```
+$ pip install --user i3-layouts -U
+```
+
 ## Run
 To start `i3-layouts`, simply type `i3-layouts` in a terminal,
 or better yet, launch it from the i3 config file:
@@ -128,7 +136,13 @@ You can also use a keyboard binding in your i3 config file, for example:
 ```
 bindsym $mod+s exec i3-msg -t send_tick "i3-layouts vstack 0.6"
 ```
-  
+
+Using `notify-send`, it's possible to be notified of the selected layout when switching:
+
+```
+bindsym $mod+s exec i3-msg -t send_tick "i3-layouts vstack 0.6 && notify-send 'Layout vstack'
+```
+
 ### Moving windows inside the layout
 
 ![move](./img/move.gif)

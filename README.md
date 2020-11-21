@@ -9,28 +9,28 @@ Each layout implemented comes with its own set of parameters.
 `i3-layouts` comes with 6 configurable layouts: 
 - `vstack`: one main windows with a vertical stack of windows.
 
-![vstack](./img/vstack.png)
+![vstack](./img/vstack.gif)
 
 - `hstack`: one main windows with an horizontal stack of windows.
 
-![hstack](./img/hstack.png)
+![hstack](./img/hstack.gif)
 
 - `spiral`: each new windows split the previous one, split direction alternates between
 horizontal and vertical.  
 
-![spiral](./img/spiral.png)
+![spiral](./img/spiral.gif)
 
 - `2columns`: two vertical stacks of equally sized windows.
 
-![2columns](./img/2columns.png)
+![2columns](./img/2columns.gif)
 
 - `3columns`: one main windows with two vertical stacks of windows.
 
-![3columns](./img/3columns.png)
+![3columns](./img/3columns.gif)
 
 - `companion`: each columns is made of one main window and one smaller window.
 
-![companion](./img/companion.png)
+![companion](./img/companion.gif)
 
 
 The [Layout section](#layouts) details the parameters for each one of these layouts. 
@@ -130,6 +130,8 @@ bindsym $mod+s exec i3-msg -t send_tick "i3-layouts vstack 0.6"
 ```
   
 ### Moving windows inside the layout
+
+![move](./img/move.gif)
 
 By default, when moving windows, chances are their position will not match the selected layout.
 To keep windows within the layout available positions, `i3-layouts` must manage all `move` command.

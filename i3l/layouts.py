@@ -107,13 +107,13 @@ class Layout:
 
     @classmethod
     def _destination_candidates(cls, context: Context, direction: str, origin: Con) -> List[Con]:
-        def vertical_overlap(con1: Con, con2: Con):
-            return con1.rect.y <= con2.rect.y <= con1.rect.y + con1.rect.height \
-                or con1.rect.y <= con2.rect.y + con2.rect.height <= con1.rect.y + con1.rect.height
+        def vertical_overlap(origin: Con, candidate: Con):
+            return candidate.rect.y <= origin.rect.y <= candidate.rect.y + candidate.rect.height \
+                   or candidate.rect.y <= origin.rect.y + origin.rect.height <= candidate.rect.y + candidate.rect.height
 
-        def horizontal_overlap(con1: Con, con2: Con):
-            return con1.rect.x <= con2.rect.x <= con1.rect.x + con1.rect.width \
-                or con1.rect.x <= con2.rect.x + con2.rect.width < con1.rect.x + con1.rect.width
+        def horizontal_overlap(origin: Con, candidate: Con):
+            return candidate.rect.x <= origin.rect.x <= candidate.rect.x + candidate.rect.width \
+                   or candidate.rect.x <= origin.rect.x + origin.rect.width < candidate.rect.x + candidate.rect.width
 
         def overlap(direction: str):
             return horizontal_overlap if direction in ['up', 'down'] else vertical_overlap

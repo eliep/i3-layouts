@@ -111,6 +111,7 @@ class AbstractTestCase:
         i3 = Connection()
         i3.on(Event.TICK, on_tick)
         i3.main()
+        self.workspaces = Workspaces(2, 0)
 
     def _create_windows(self) -> None:
         def command():
@@ -188,47 +189,48 @@ class AbstractTestCase:
 
 class I3LayoutScenario(AbstractTestCase):
 
-    def senario(self):
-        self._set_layout(self.layout())
-        logger.debug(f'=== test {self.layout()} create 6 windows from scratch ===')
+    def senario(self, params: List):
+        layout = self.layout(params)
+        self._set_layout(layout)
+        logger.debug(f'=== test {layout} create 6 windows from scratch ===')
         for i in range(0, 6):
             self._create_windows()
-        self.validate(self.layout_params())
+        self.validate(params)
 
-        logger.debug(f'=== test {self.layout()} close first window ===')
+        logger.debug(f'=== test {layout} close first window ===')
         self._close_window(0)
-        self.validate(self.layout_params())
+        self.validate(params)
 
-        logger.debug(f'=== test {self.layout()} close last window ===')
+        logger.debug(f'=== test {layout} close last window ===')
         self._close_window(len(self.workspaces.windows()) - 1)
-        self.validate(self.layout_params())
+        self.validate(params)
 
-        logger.debug(f'=== test {self.layout()} create 3 windows ===')
+        logger.debug(f'=== test {layout} create 3 windows ===')
         for i in range(0, 3):
             self._create_windows()
-        self.validate(self.layout_params())
+        self.validate(params)
 
-        logger.debug(f'=== test {self.layout()} move one window to another workspace ===')
+        logger.debug(f'=== test {layout} move one window to another workspace ===')
         self._move_window_to_workspace(3, 1)
-        self.validate(self.layout_params())
+        self.validate(params)
 
-        logger.debug(f'=== test {self.layout()} move one window from another workspace ===')
+        logger.debug(f'=== test {layout} move one window from another workspace ===')
         self._move_window_from_workspace(1)
-        self.validate(self.layout_params())
+        self.validate(params)
 
-        logger.debug(f'=== test {self.layout()} switch layout ===')
-        self._switch_layout(self.layout(), self.alternate_layout())
-        self.validate(self.layout_params())
+        logger.debug(f'=== test {layout} switch layout ===')
+        self._switch_layout(layout, self.alternate_layout())
+        self.validate(params)
 
-        logger.debug(f'=== test {self.layout()} create windows moved to another workspace ===')
+        logger.debug(f'=== test {layout} create windows moved to another workspace ===')
         self._create_moving_windows(1, window_class='move-window')
-        self.validate(self.layout_params())
+        self.validate(params)
         # self.wait_for_quit()
 
-    def validate(self, args):
+    def validate(self, params: List):
         pass
 
-    def layout(self) -> str:
+    def layout(self, params: List) -> str:
         pass
 
     def layout_params(self) -> List:
@@ -241,15 +243,16 @@ class I3LayoutScenario(AbstractTestCase):
 class TestHStack(I3LayoutScenario):
 
     def test_scenario(self):
-        self.senario()
-        self._close_all()
+        for params in self.layout_params():
+            self.senario(params)
+            self._close_all()
 
-    def layout(self) -> str:
-        ratio, position = self.layout_params()
+    def layout(self, params: List) -> str:
+        ratio, position = params
         return f'hstack {ratio} {position}'
 
     def layout_params(self) -> List:
-        return [0.6, 'up']
+        return [[0.6, 'up']]
 
     def alternate_layout(self) -> str:
         return 'vstack'
@@ -282,15 +285,19 @@ class TestHStack(I3LayoutScenario):
 class TestVStack(I3LayoutScenario):
 
     def test_scenario(self):
-        self.senario()
-        self._close_all()
+        for params in self.layout_params():
+            self.senario(params)
+            self._close_all()
 
-    def layout(self) -> str:
-        ratio, position = self.layout_params()
+    def layout(self, params: List) -> str:
+        ratio, position = params
         return f'vstack {ratio} {position}'
 
     def layout_params(self) -> List:
-        return [0.6, 'right']
+        return [
+            [0.6, 'right'],
+            [0.4, 'left']
+        ]
 
     def alternate_layout(self) -> str:
         return 'hstack'
@@ -322,15 +329,16 @@ class TestVStack(I3LayoutScenario):
 class TestSpiral(I3LayoutScenario):
 
     def test_scenario(self):
-        self.senario()
-        self._close_all()
+        for params in self.layout_params():
+            self.senario(params)
+            self._close_all()
 
-    def layout(self) -> str:
-        ratio, direction = self.layout_params()
+    def layout(self, params: List) -> str:
+        ratio, direction = params
         return f'spiral {ratio} {direction}'
 
     def layout_params(self) -> List:
-        return [0.6, 'outside']
+        return [[0.6, 'outside']]
 
     def alternate_layout(self) -> str:
         return 'hstack'
@@ -353,15 +361,16 @@ class TestSpiral(I3LayoutScenario):
 class TestCompanion(I3LayoutScenario):
 
     def test_scenario(self):
-        self.senario()
-        self._close_all()
+        for params in self.layout_params():
+            self.senario(params)
+            self._close_all()
 
-    def layout(self) -> str:
-        odd_companion_ratio, even_companion_ratio, companion_position = self.layout_params()
+    def layout(self, params: List) -> str:
+        odd_companion_ratio, even_companion_ratio, companion_position = params
         return f'companion {odd_companion_ratio} {even_companion_ratio} {companion_position}'
 
     def layout_params(self) -> List:
-        return [0.3, 0.4, 'up']
+        return [[0.3, 0.4, 'up']]
 
     def alternate_layout(self) -> str:
         return 'hstack'
@@ -387,15 +396,20 @@ class TestCompanion(I3LayoutScenario):
 class TestThreeColumns(I3LayoutScenario):
 
     def test_scenario(self):
-        self.senario()
-        self._close_all()
+        for params in self.layout_params():
+            self.senario(params)
+            self._close_all()
 
-    def layout(self) -> str:
-        ratio_2, ratio_3, max_2, position_2 = self.layout_params()
+    def layout(self, params: List) -> str:
+        ratio_2, ratio_3, max_2, position_2 = params
         return f'3columns {ratio_2} {ratio_3} {max_2} {position_2}'
 
     def layout_params(self) -> List:
-        return [0.66, 0.5, 2, 'left']
+        return [
+            [0.66, 0.5, 2, 'left'],
+            [0.66, 0.5, 2, 'right'],
+            [0.66, 0.5, 0, 'left']
+        ]
 
     def alternate_layout(self) -> str:
         return 'hstack'
@@ -406,8 +420,7 @@ class TestThreeColumns(I3LayoutScenario):
         geoms = [self._get_window_geometry(window) for window in windows]
 
         main = geoms[0]
-        column_2 = geoms[1:max_2+1]
-        column_3 = geoms[max_2+1:]
+        column_2, column_3 = (geoms[1:max_2+1], geoms[max_2+1:]) if max_2 > 0 else (geoms[1::2], geoms[2::2])
 
         for i, geom in enumerate(column_2):
             if i > 0:
@@ -428,8 +441,8 @@ class TestThreeColumns(I3LayoutScenario):
         if len(geoms) > max_2 + 1:
             column_2_width = column_2[0].width
             column_3_width = column_3[0].width
-            assert column_2_width == approx(column_3_width, abs=20)
-            assert main.width == approx(ratio_3 * (main.width + column_2_width + column_3_width), abs=20)
+            assert column_2_width == approx(column_3_width, abs=2)
+            assert main.width == approx(ratio_3 * (main.width + column_2_width + column_3_width), abs=2)
         elif len(geoms) > 1:
             column_2_width = column_2[0].width
             assert main.width == approx(ratio_2 * (main.width + column_2_width), abs=2)
@@ -438,14 +451,16 @@ class TestThreeColumns(I3LayoutScenario):
 class TestTwoColumns(I3LayoutScenario):
 
     def test_scenario(self):
-        self.senario()
-        self._close_all()
+        for params in self.layout_params():
+            self.senario(params)
+            self._close_all()
 
-    def layout(self) -> str:
-        return f'2columns'
+    def layout(self, params: List) -> str:
+        position = params[0]
+        return f'2columns {position}'
 
     def layout_params(self) -> List:
-        return []
+        return [['left']]
 
     def alternate_layout(self) -> str:
         return 'hstack'

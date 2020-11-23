@@ -4,7 +4,7 @@ from i3ipc import Connection, TickEvent
 from i3ipc.events import WorkspaceEvent, WindowEvent
 import logging
 
-from i3l.state import State, RebuildCause, Context
+from i3l.state import State, RebuildCause, Context, is_layout_container
 from i3l.layouts import Layouts
 
 logger = logging.getLogger(__name__)
@@ -126,7 +126,7 @@ def on_window_new(layouts: Layouts, state: State):
         if not layouts.exists_for(context.workspace.name) or context.workspace_sequence is None:
             logger.debug('  [ipc] window new event - no workspace layout')
             return
-        if not state.is_layout_container(e.container):
+        if not is_layout_container(e.container):
             logger.debug('  [ipc] window new event - not a layout container')
             return
         context.workspace_sequence.set_order(e.container)

@@ -215,7 +215,7 @@ One main windows with two vertical stacks of windows.
 
 * **main window ratio** [two columns] (float between `0` and `1`, default `0.5`): 
 ratio of screen width used by the main window when only two columns are present
-* **main stack ratio** [three columns] (float between `0` and `1`, default `0.5`): 
+* **main window ratio** [three columns] (float between `0` and `1`, default `0.5`): 
 ratio of screen width used by the main window when three columns are present. Width left
 is distributed equally between the second and third columns
 * **max number of row in the second columns** (int, default `0`): 

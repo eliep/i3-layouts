@@ -109,11 +109,11 @@ class Layout:
     def _destination_candidates(cls, context: Context, direction: str, origin: Con) -> List[Con]:
         def vertical_overlap(origin: Con, candidate: Con):
             return candidate.rect.y <= origin.rect.y <= candidate.rect.y + candidate.rect.height \
-                   or candidate.rect.y <= origin.rect.y + origin.rect.height <= candidate.rect.y + candidate.rect.height
+                or candidate.rect.y <= origin.rect.y + origin.rect.height <= candidate.rect.y + candidate.rect.height
 
         def horizontal_overlap(origin: Con, candidate: Con):
             return candidate.rect.x <= origin.rect.x <= candidate.rect.x + candidate.rect.width \
-                   or candidate.rect.x <= origin.rect.x + origin.rect.width < candidate.rect.x + candidate.rect.width
+                or candidate.rect.x <= origin.rect.x + origin.rect.width < candidate.rect.x + candidate.rect.width
 
         def overlap(direction: str):
             return horizontal_overlap if direction in ['up', 'down'] else vertical_overlap
@@ -436,12 +436,18 @@ class ThreeColumns(Layout):
             main_width = context.workspace_width(self.two_columns_main_ratio)
             context.exec(f'[con_mark="{self.mark_main()}"] resize set {main_width}')
         elif len(context.containers) == third_column_container_index:
+            containers = context.resync().sorted_containers()
+            stack_width = context.workspace_width((1 - self.three_columns_main_ratio) / 2)
+            stack_width_delta = containers[1].rect.width - stack_width
+            self._resize(context, 'con_id', containers[1].id, stack_width_delta)
             main_width = context.workspace_width(self.three_columns_main_ratio)
-            context.exec(f'[con_mark="{self.mark_main()}"] resize set {main_width}')
-            for container in context.containers:
-                if self.mark_main() not in container.marks:
-                    width = context.workspace_width(self.three_columns_main_ratio / 2)
-                    context.exec(f'[con_id="{container.id}"] resize set {width}')
+            main_width_delta = containers[0].rect.width + stack_width_delta - main_width
+            self._resize(context, 'con_mark', self.mark_main(), main_width_delta)
+
+    def _resize(self, context: Context, attr: str, value: str, delta: int):
+        resize_direction = self.second_column_position.opposite().value
+        resize_expansion = 'shrink' if delta >= 0 else 'grow'
+        context.exec(f'[{attr}="{value}"] resize {resize_expansion} {resize_direction} {abs(delta)} px')
 
     def _move_to_column(self, context: Context, column: str):
         if (self.second_column_position == HorizontalPosition.RIGHT and column == 'second') or \

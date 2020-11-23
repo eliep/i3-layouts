@@ -9,6 +9,11 @@ from i3ipc import Con, Connection, CommandReply, TickReply
 logger = logging.getLogger(__name__)
 
 
+def is_layout_container(container: Con) -> bool:
+    return container.window is not None and container.type == 'con' \
+        and container.floating != 'auto_on' and container.floating != 'user_on'
+
+
 class RebuildCause(Enum):
     LAYOUT_CHANGE_VSTACK = 'layout_change_vstack'
     LAYOUT_CHANGE_HSTACK = 'layout_change_hstack'
@@ -54,13 +59,13 @@ class Context:
                  i3l: Connection,
                  workspace: Con,
                  focused: Con,
-                 containers: List[Con],
                  workspace_sequence: Optional[WorkspaceSequence]):
         self.i3l = i3l
         self.workspace = workspace
         self.focused = focused
-        self.containers = containers
-        self.workspace_sequence = workspace_sequence
+        self.containers = self._sync_containers(workspace)
+        self.workspace_sequence = self._sync_workspace_sequence(self.containers, workspace_sequence) \
+            if workspace_sequence is not None else None
 
     def contains_container(self, con_id: int) -> bool:
         containers = [container for container in self.containers if container.id == con_id]
@@ -92,6 +97,25 @@ class Context:
             window_id = self.focused.window
         command = shlex.split(f'xdotool windowmap {window_id}')
         subprocess.run(command)
+
+    def resync(self) -> 'Context':
+        tree = self.i3l.get_tree()
+        focused = tree.find_focused()
+        workspace = focused.workspace()
+        self.containers = self._sync_containers(workspace)
+        return self
+
+    @classmethod
+    def _sync_containers(cls, workspace: Con) -> List[Con]:
+        containers = [container for container in workspace if is_layout_container(container)]
+        return sorted(containers, key=lambda container: container.window)
+
+    @staticmethod
+    def _sync_workspace_sequence(containers: List[Con], workspace_sequence: WorkspaceSequence) -> WorkspaceSequence:
+        for container in containers:
+            if workspace_sequence.get_order(container.id) is None:
+                workspace_sequence.set_order(container)
+        return workspace_sequence
 
 
 class RebuildAction:
@@ -154,33 +178,17 @@ class State:
         tree = i3l.get_tree()
         focused = tree.find_focused()
         workspace = focused.workspace()
-        containers = [container for container in workspace if self.is_layout_container(container)]
-        containers = sorted(containers, key=lambda container: container.window)
-
-        workspace_sequence = self._sync_workspace_sequence(containers, workspace)
-        self.context = Context(i3l, workspace, focused, containers, workspace_sequence)
+        workspace_sequence = self.get_workspace_sequence(workspace.name)
+        self.context = Context(i3l, workspace, focused, workspace_sequence)
         return self.context
 
-    def _sync_workspace_sequence(self, containers: List[Con], workspace: Con):
-        workspace_sequence = self.get_workspace_sequence(workspace.name)
-        if workspace_sequence is not None:
-            for container in containers:
-                if workspace_sequence.get_order(container.id) is None:
-                    workspace_sequence.set_order(container)
-        return workspace_sequence
-
-    @staticmethod
-    def is_layout_container(container: Con):
-        return container.window is not None and container.type == 'con' \
-            and container.floating != 'auto_on' and container.floating != 'user_on'
-
-    def has_rebuild_in_progress(self):
+    def has_rebuild_in_progress(self) -> bool:
         return self.rebuild_action.rebuild_cause is not None
 
-    def is_rebuild_finished(self):
+    def is_rebuild_finished(self) -> bool:
         return self.has_rebuild_in_progress() and len(self.rebuild_action.containers_to_recreate) == 0
 
-    def rebuild_closed_container(self, window_id: int):
+    def rebuild_closed_container(self, window_id: int) -> bool:
         return window_id in self.rebuild_action.containers_to_close
 
     def start_rebuild(self, rebuild_cause: RebuildCause, context: Context,

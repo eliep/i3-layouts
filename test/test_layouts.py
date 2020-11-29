@@ -90,6 +90,7 @@ class AbstractTestCase:
         i3 = Connection()
         i3.on(Event.TICK, on_tick)
         i3.main()
+        self.display.sync()
 
     def _close_all(self):
         def flat_map(f: Callable, xs: List[List]) -> List:

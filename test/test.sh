@@ -7,7 +7,7 @@ $I3 -c ./test/config/i3/config > /dev/null 2>&1 &
 I3PID=$!
 sleep 10
 
-PYTHONPATH=. python ./i3l/connect.py &
+PYTHONPATH=. python ./i3l/connect.py --debug &
 I3LAYOUTPID=$!
 sleep 0.5
 

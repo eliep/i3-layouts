@@ -48,6 +48,9 @@ class Direction(Enum):
     VERTICAL = 'vertical'
     HORIZONTAL = 'horizontal'
 
+    def opposite(self) -> 'Direction':
+        return Direction.HORIZONTAL if self == Direction.VERTICAL else Direction.VERTICAL
+
 
 class ScreenDirection(Enum):
     INSIDE = 'inside'
@@ -57,6 +60,44 @@ class ScreenDirection(Enum):
 class ResizeDirection(Enum):
     WIDTH = 'width'
     HEIGHT = 'height'
+
+
+class Grid:
+    def __init__(self, containers: List[Con]):
+        self._containers = containers
+        self.xs = list(dict.fromkeys([container.rect.x for container in self._containers]))
+        self.xs.sort()
+        self.ys = list(dict.fromkeys([container.rect.y for container in self._containers]))
+        self.ys.sort()
+        self.left = self.xs[0]
+        self.top = self.ys[0]
+        self.right = max([container.rect.x + container.rect.width for container in self._containers])
+        self.bottom = max([container.rect.y + container.rect.height for container in self._containers])
+
+    def top_left(self) -> Optional[Con]:
+        for container in self._containers:
+            if container.rect.x == self.left and container.rect.y == self.top:
+                return container
+        return None
+
+    def bottom_left(self) -> Optional[Con]:
+        for container in self._containers:
+            if container.rect.x == self.left and container.rect.y + container.rect.height == self.bottom:
+                return container
+        return None
+
+    def bottom_right(self) -> Optional[Con]:
+        for container in self._containers:
+            if container.rect.x + container.rect.width == self.right and \
+                    container.rect.y + container.rect.height == self.bottom:
+                return container
+        return None
+
+    def top_right(self) -> Optional[Con]:
+        for container in self._containers:
+            if container.rect.x + container.rect.width == self.right and container.rect.y == self.top:
+                return container
+        return None
 
 
 class Layout:
@@ -80,12 +121,24 @@ class Layout:
     def mark_last(self):
         return f'i3l:{self.workspace_name}:last'
 
-    def anchor_mark(self) -> str:
+    def anchor_mark(self) -> Optional[str]:
         pass
+
+    @staticmethod
+    def _move_container_to(context: Context, con_id: int, direction: Optional[str] = None):
+        temp_mark = 'i3l:temp'
+        if context.focused.id != con_id:
+            context.exec(f'[con_id="{con_id}"] mark --add {temp_mark}')
+            # if orientation is not None:
+            #     context.exec(f'[con_id="{con_id}"] split {orientation}')
+            context.exec(f'move container to mark {temp_mark}')
+            context.exec(f'unmark {temp_mark}')
+        if direction is not None:
+            context.exec(f'move {direction}')
 
     def update(self, context: Context, con: Con):
         containers = context.containers
-        if len(containers) > 1:
+        if len(containers) > 1 and self.anchor_mark() is not None:
             context.exec(f'[con_id="{con.id}"] move window to mark {self.anchor_mark()}')
 
         self._update(context)
@@ -182,7 +235,7 @@ class Stack(Layout):
     def _params(self) -> List[Any]:
         return [self.main_ratio, self.second_axe_position.value]
 
-    def anchor_mark(self) -> str:
+    def anchor_mark(self) -> Optional[str]:
         return self.mark_last()
 
     def _update(self, context: Context):
@@ -200,7 +253,7 @@ class Stack(Layout):
         pass
 
     def _second_direction(self) -> Direction:
-        pass
+        return self._first_direction().opposite()
 
     def _resize_direction(self) -> ResizeDirection:
         pass
@@ -219,9 +272,6 @@ class VStack(Stack):
 
     def _first_direction(self) -> Direction:
         return Direction.HORIZONTAL
-
-    def _second_direction(self) -> Direction:
-        return Direction.VERTICAL
 
     def _resize_direction(self) -> ResizeDirection:
         return ResizeDirection.WIDTH
@@ -244,9 +294,6 @@ class HStack(Stack):
 
     def _first_direction(self) -> Direction:
         return Direction.VERTICAL
-
-    def _second_direction(self) -> Direction:
-        return Direction.HORIZONTAL
 
     def _resize_direction(self) -> ResizeDirection:
         return ResizeDirection.HEIGHT
@@ -277,7 +324,7 @@ class Spiral(Layout):
     def _params(self) -> List[Any]:
         return [self.main_ratio, self.screen_direction.value]
 
-    def anchor_mark(self) -> str:
+    def anchor_mark(self) -> Optional[str]:
         return self.mark_last()
 
     def _update(self, context: Context):
@@ -318,7 +365,7 @@ class Companion(Layout):
     def _params(self) -> List[Any]:
         return [self.odd_companion_ratio, self.even_companion_ratio, self.companion_position.value]
 
-    def anchor_mark(self) -> str:
+    def anchor_mark(self) -> Optional[str]:
         return self.mark_last()
 
     def _update(self, context: Context):
@@ -358,7 +405,7 @@ class TwoColumns(Layout):
     def _params(self) -> List[Any]:
         return []
 
-    def anchor_mark(self) -> str:
+    def anchor_mark(self) -> Optional[str]:
         return self.mark_main()
 
     def _update(self, context: Context):
@@ -372,12 +419,9 @@ class TwoColumns(Layout):
         self._move_container_to_lowest(context, candidates)
 
     def _move_container_to_lowest(self, context: Context, candidates: List[Con]):
-        lowest_mark = 'i3l:lowest'
         lowest = self._lowest(candidates)
         if lowest is not None:
-            context.exec(f'[con_id="{lowest.id}"] mark --add {lowest_mark}')
-        context.exec(f'move container to mark {lowest_mark}')
-        context.exec(f'unmark {lowest_mark}')
+            self._move_container_to(context, lowest.id)
 
     @classmethod
     def _lowest(cls, containers: List[Con]) -> Optional[Con]:
@@ -416,20 +460,23 @@ class ThreeColumns(Layout):
                 self.second_column_max,
                 self.second_column_position.value]
 
-    def anchor_mark(self) -> str:
-        return self.mark_main()
+    def anchor_mark(self) -> Optional[str]:
+        return None
 
     def _update(self, context: Context):
-        if (self.second_column_max == 0 and len(context.containers) % 2 == 0) or \
-                len(context.containers) - 1 <= self.second_column_max:
-            self._move_to_column(context, 'second')
-        else:
-            self._move_to_column(context, 'third')
-
+        is_second_column = (self.second_column_max == 0 and len(context.containers) % 2 == 0) or \
+            len(context.containers) - 1 <= self.second_column_max
+        is_right = (self.second_column_position == HorizontalPosition.RIGHT and is_second_column) or \
+                   (self.second_column_position == HorizontalPosition.LEFT and not is_second_column)
         third_column_container_index = 3 if self.second_column_max == 0 else self.second_column_max + 2
-        if len(context.containers) == 1:
-            context.exec('split horizontal')
-        elif len(context.containers) in [2, third_column_container_index]:
+
+        grid = Grid(context.containers)
+        bottom_container = grid.bottom_right() if is_right else grid.bottom_left()
+        direction = None if len(context.containers) not in [2, third_column_container_index] \
+            else 'right' if is_right else 'left'
+        self._move_container_to(context, bottom_container.id, direction)
+
+        if len(context.containers) in [1, 2, third_column_container_index]:
             context.exec('split vertical')
 
         if len(context.containers) == 2:
@@ -449,14 +496,6 @@ class ThreeColumns(Layout):
         resize_expansion = 'shrink' if delta >= 0 else 'grow'
         context.exec(f'[{attr}="{value}"] resize {resize_expansion} {resize_direction} {abs(delta)} px')
 
-    def _move_to_column(self, context: Context, column: str):
-        if (self.second_column_position == HorizontalPosition.RIGHT and column == 'second') or \
-                (self.second_column_position == HorizontalPosition.LEFT and column == 'third'):
-            context.exec(f'[con_id="{context.focused.id}"] move right')
-        else:
-            context.exec(f'[con_id="{context.focused.id}"] move left')
-            context.exec(f'[con_id="{context.focused.id}"] move left')
-
     @classmethod
     def create(cls, workspace_name: str, params: List[Any]) -> Optional['Layout']:
         return ThreeColumns(workspace_name, params)
@@ -473,7 +512,7 @@ class I3Layout(Layout):
     def is_i3(self) -> bool:
         return True
 
-    def anchor_mark(self) -> str:
+    def anchor_mark(self) -> Optional[str]:
         return self.mark_main()
 
     def _update(self, context: Context):

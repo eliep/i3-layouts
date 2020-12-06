@@ -196,35 +196,43 @@ class I3LayoutScenario(AbstractTestCase):
         logger.debug(f'=== test {layout} create 6 windows from scratch ===')
         for i in range(0, 6):
             self._create_windows()
+        self.print_windows_coordinates()
         self.validate(params)
 
         logger.debug(f'=== test {layout} close first window ===')
         self._close_window(0)
+        self.print_windows_coordinates()
         self.validate(params)
 
         logger.debug(f'=== test {layout} close last window ===')
         self._close_window(len(self.workspaces.windows()) - 1)
+        self.print_windows_coordinates()
         self.validate(params)
 
         logger.debug(f'=== test {layout} create 3 windows ===')
         for i in range(0, 3):
             self._create_windows()
+        self.print_windows_coordinates()
         self.validate(params)
 
         logger.debug(f'=== test {layout} move one window to another workspace ===')
         self._move_window_to_workspace(3, 1)
+        self.print_windows_coordinates()
         self.validate(params)
 
         logger.debug(f'=== test {layout} move one window from another workspace ===')
         self._move_window_from_workspace(1)
+        self.print_windows_coordinates()
         self.validate(params)
 
         logger.debug(f'=== test {layout} switch layout ===')
         self._switch_layout(layout, self.alternate_layout())
+        self.print_windows_coordinates()
         self.validate(params)
 
         logger.debug(f'=== test {layout} create windows moved to another workspace ===')
         self._create_moving_windows(1, window_class='move-window')
+        self.print_windows_coordinates()
         self.validate(params)
         # self.wait_for_quit()
 
@@ -239,6 +247,18 @@ class I3LayoutScenario(AbstractTestCase):
 
     def alternate_layout(self) -> str:
         pass
+
+    @staticmethod
+    def window_to_string(w):
+        return f'[{w.get_geometry().x},{w.get_geometry().y}:{w.get_geometry().width}x{w.get_geometry().height}]'
+
+    def print_windows_coordinates(self):
+        root = self.display.screen().root
+
+        query = root.query_tree()
+        windows_geometry = [self.window_to_string(c) for c in query.children
+                            if c.get_wm_name() is not None and c.get_wm_name().startswith('[i3 con] container')]
+        logger.debug(f"{', '.join(windows_geometry)}")
 
 
 class TestHStack(I3LayoutScenario):

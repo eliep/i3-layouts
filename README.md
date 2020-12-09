@@ -240,9 +240,6 @@ the first column.
 
 ## Limitations
 
-* **User `split` actions**: `i3-layouts` do its best to manage the workspace layout, but if you manually 
-`split` a container (for example with `split vertical|horizontal`), new container may be misplaced.
-For `move` command to work as expected, see [Moving windows inside the layout](#moving-windows-inside-the-layout)
 * **Redraw**: when container are closed, or moved between workspace, `i3-layouts` needs to reposition
 some if not all containers of a given workspace. Right now, `i3-layouts` use `xdotool` 
 to simulate the recreation of these containers.

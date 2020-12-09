@@ -57,13 +57,13 @@ class WorkspaceSequence:
 class Context:
     def __init__(self,
                  i3l: Connection,
-                 workspace: Con,
-                 focused: Con,
+                 tree: Con,
                  workspace_sequence: Optional[WorkspaceSequence]):
         self.i3l = i3l
-        self.workspace = workspace
-        self.focused = focused
-        self.containers = self._sync_containers(workspace)
+        self.tree = tree
+        self.focused = tree.find_focused()
+        self.workspace = self.focused.workspace()
+        self.containers = self._sync_containers(self.workspace)
         self.workspace_sequence = self._sync_workspace_sequence(self.containers, workspace_sequence) \
             if workspace_sequence is not None else None
 
@@ -99,8 +99,8 @@ class Context:
         subprocess.run(command)
 
     def resync(self) -> 'Context':
-        tree = self.i3l.get_tree()
-        focused = tree.find_focused()
+        self.tree = self.i3l.get_tree()
+        focused = self.tree.find_focused()
         workspace = focused.workspace()
         self.containers = self._sync_containers(workspace)
         return self
@@ -150,6 +150,7 @@ class RebuildAction:
             context.xdo_map_window(container_window_id)
         elif len(containers) == 1:
             context.exec(f'[con_id="{containers[-1].id}"] mark {main_mark}')
+            context.exec(f'[con_id="{containers[-1].id}"] mark --add {last_mark}')
             self.end_rebuild(context)
         else:
             context.exec(f'[con_id="{containers[-1].id}"] mark {last_mark}')
@@ -179,7 +180,7 @@ class State:
         focused = tree.find_focused()
         workspace = focused.workspace()
         workspace_sequence = self.get_workspace_sequence(workspace.name)
-        self.context = Context(i3l, workspace, focused, workspace_sequence)
+        self.context = Context(i3l, tree, workspace_sequence)
         return self.context
 
     def has_rebuild_in_progress(self) -> bool:

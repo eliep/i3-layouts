@@ -4,6 +4,7 @@ from i3ipc import Connection, TickEvent
 from i3ipc.events import WorkspaceEvent, WindowEvent
 import logging
 
+from i3l.mover import Mover
 from i3l.state import State, RebuildCause, Context, is_layout_container
 from i3l.layouts import Layouts
 
@@ -13,12 +14,12 @@ logger = logging.getLogger(__name__)
 def on_tick(layouts: Layouts, state: State):
 
     def handle_move_tick(context: Context, action_params: List[str]):
+        mover = Mover(context)
         if layouts.exists_for(context.workspace.name) and not layouts.get(context.workspace.name).is_i3():
-            logger.debug(f'  [ipc] workspace layouts exists for {context.workspace.name}')
-            layout = layouts.get(context.workspace.name)
-            layout.move(context, action_params[0])
+            logger.debug(f'  [ipc] tick event - move container')
+            mover.move_to_direction(action_params[0])
         else:
-            context.exec(f'move {action_params[0]}')
+            mover.forward(action_params[0])
 
     def handle_layout_tick(context: Context, action_name: str, action_params: List[str]):
         layout = Layouts.create(action_name, action_params, context.workspace.name)

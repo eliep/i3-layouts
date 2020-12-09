@@ -391,7 +391,7 @@ class TestCompanion(I3LayoutScenario):
         return f'companion {odd_companion_ratio} {even_companion_ratio} {companion_position}'
 
     def layout_params(self) -> List:
-        return [[0.3, 0.4, 'up']]
+        return [[0.3, 0.4, 'up'], [0.3, 0.4, 'down'], [0.3, 0.4, 'alt-up'], [0.3, 0.4, 'alt-down']]
 
     def alternate_layout(self) -> str:
         return 'hstack'
@@ -403,11 +403,14 @@ class TestCompanion(I3LayoutScenario):
 
         for i, geom in enumerate(geoms[0::2]):
             if len(geoms) % 2 == 0 or i*2+1 < len(geoms):
-                prev_geom = geoms[i*2+1]
-                assert geom.x == prev_geom.x
-                assert geom.y > prev_geom.y + prev_geom.height
+                companion_geom = geoms[i*2+1]
+                assert geom.x == companion_geom.x
+                is_up = 1 if companion_position == 'up' or \
+                    (companion_position == 'alt-up' and (i % 2 == 0)) or \
+                    (companion_position == 'alt-down' and (i % 2 == 1)) else -1
+                assert geom.y > is_up * (companion_geom.y + companion_geom.height)
                 ratio = odd_ratio if i % 2 == 0 else even_ratio
-                assert geom.height == approx((1 - ratio) * (prev_geom.height + geom.height), abs=2)
+                assert geom.height == approx((1 - ratio) * (companion_geom.height + geom.height), abs=2)
             else:
                 assert geom.height == approx(800, abs=2)
             if i > 0:

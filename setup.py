@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='i3-layouts',
-    version='0.9.4',
+    version='0.10.0',
     description='Dynamics layouts for i3wm',
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -28,4 +28,7 @@ setuptools.setup(
     entry_points={
         'console_scripts': ['i3-layouts=i3l.cli:main']
     },
+    scripts=[
+        'scripts/i3l'
+    ],
     zip_safe=False)

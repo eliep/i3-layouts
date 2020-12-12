@@ -4,36 +4,38 @@
 ![pipy](https://github.com/eliep/i3-layouts/workflows/Publish/badge.svg)
 
 `i3-layouts` is a small program that enforces dynamic layout on i3 workspace. 
-Each layout implemented comes with its own set of parameters. 
-
-`i3-layouts` comes with 6 configurable layouts: 
-- `vstack`: one main windows with a vertical stack of windows.
 
 ![vstack](./img/vstack.gif)
 
+`i3-layouts` comes with 6 configurable layouts:
+ 
+- `vstack`: one main windows with a vertical stack of windows.
 - `hstack`: one main windows with an horizontal stack of windows.
-
-![hstack](./img/hstack.gif)
-
 - `spiral`: each new windows split the previous one, split direction alternates between
 horizontal and vertical.  
-
-![spiral](./img/spiral.gif)
-
 - `2columns`: two vertical stacks of equally sized windows.
-
-![2columns](./img/2columns.gif)
-
 - `3columns`: one main windows with two vertical stacks of windows.
-
-![3columns](./img/3columns.gif)
-
 - `companion`: each columns is made of one main window and one smaller window.
 
-![companion](./img/companion.gif)
+Parameters for each one of these layouts is detailled in the [Layout section](#layouts). 
 
-
-The [Layout section](#layouts) details the parameters for each one of these layouts. 
+* [Installation](#installation)
+  - [Requirements](#requirements)
+  - [Installation with pip](#installation-with-pip)
+  - [Update with pip](#update-with-pip)
+* [Running](#running)
+* [Configuration](#configuration)
+  - [Assigning a layout to a workspace](#assigning-a-layout-to-a-workspace)
+  - [Switching layout](#switching-layout)
+  - [Moving windows inside the layout](#moving-windows-inside-the-layout)
+* [Layouts](#layouts)
+  - [vstack](#vstack)
+  - [hstack](#hstack)
+  - [spiral](#spiral)
+  - [2columns](#2columns)
+  - [3columns](#3columns)
+  - [companion](#companion)
+* [Limitations](#limitations)
 
 ## Installation
 
@@ -42,7 +44,7 @@ Before installing `i3-layouts` be sure to have the following installed on your s
 
 * python >= 3.7
 * [xdotool](https://www.semicomplete.com/projects/xdotool/)
-* [i3wm](https://i3wm.org/)
+* [i3wm](https://i3wm.org/) or [i3-gaps](https://github.com/Airblader/i3)
 
 
 ### Installation with pip
@@ -60,9 +62,9 @@ To update, again use `pip`
 $ pip install --user i3-layouts -U
 ```
 
-## Run
-To start `i3-layouts`, simply type `i3-layouts` in a terminal,
-or better yet, launch it from the i3 config file:
+## Running
+`i3-layouts` can be started from a terminal
+or better yet, launched from the i3 config file:
 
 ```
 exec i3-layouts
@@ -73,11 +75,11 @@ Configuration is done directly in the i3 config file (usually `$HOME/.config/i3/
 
 `i3-layouts` reads the entire config file, filter all `$i3l` variables and 
 keeps the associated values as configuration. Note that user defined variables can be used
-in `$i3l` variables, as they will be replaced by their own value.
+within `$i3l` variables, as they will be replaced by their own value.
 
 ### Assigning a layout to a workspace
-Use the name of the layout as value for the `$i3l` variable, followed by its parameters and 
-then the targeted workspace name.
+To assign a layout to a workspace, use the name of the layout as value for the `$i3l` variable, 
+followed by its parameters and then the targeted workspace name.
 
 Note that parameters are optional. However, if given, they must respect the order described 
 in the [Layouts](#layouts) section.
@@ -88,7 +90,7 @@ in the [Layouts](#layouts) section.
 set $i3l [vstack|hstack|spiral|3columns|2columns|companion] <param> ... to workspace [workspace name]
 ```
 
-It's also possible to use any of i3 existing layout:
+Standard i3 layouts can also be used:
 
 ```
 set $i3l [tabbed|splitv|splith|stacking] to workspace [workspace name]
@@ -111,36 +113,36 @@ set $i3l companion 0.3 0.4 up to workspace $ws6
 
 ### Switching layout
 
-It possible to dynamically switch the current workspace layout by sending a `send_tick`
-message with `i3-msg`. The message must start with `i3-layouts` 
-followed by one of the layout name or `none`:
+It's also possible to dynamically switch the current workspace layout 
+via the provided `i3l` command with the layout name and its parameters as argument.
 
 - If a layout name is given, and windows are already present, 
 they will be rearranged to match the selected layout.   
-- If `none` is given, `i3-layouts` will stop managing this workspace layout.  
+- If `none` is `i3l` first argument, `i3-layouts` will stop managing the current workspace layout. 
 
 **Syntax:**
 
 ```
-i3-msg -t send_tick "i3-layouts [vstack|hstack|spiral|3columns|none] <param> ..."
+i3l [vstack|hstack|spiral|3columns|2columns|companion|none] <param> ...
 ```
  
 **Examples:**
 
 ```
-i3-msg -t send_tick "i3-layouts vstack 0.6"
+i3l vstack 0.6
+i3l none
 ```
 
-You can also use a keyboard binding in your i3 config file, for example:
+i3 can also be leverage to switch layout on with a key binding, for example:
  
 ```
-bindsym $mod+s exec i3-msg -t send_tick "i3-layouts vstack 0.6"
+bindsym $mod+s exec i3l vstack 0.6
 ```
 
-Using `notify-send`, it's possible to be notified of the selected layout when switching:
+Chaining the previous command with `notify-send` allows to receive a quick notification of the current layout:
 
 ```
-bindsym $mod+s exec i3-msg -t send_tick "i3-layouts vstack 0.6 && notify-send 'Layout vstack'
+bindsym $mod+s exec i3l vstack 0.6 && notify-send 'Layout vstack'
 ```
 
 ### Moving windows inside the layout
@@ -148,7 +150,7 @@ bindsym $mod+s exec i3-msg -t send_tick "i3-layouts vstack 0.6 && notify-send 'L
 ![move](./img/move.gif)
 
 By default, when moving windows, chances are their position will not match the selected layout.
-To keep windows within the layout available positions, `i3-layouts` must manage all `move` command.
+To keep windows within the layout possible positions, `i3-layouts` must manage all `move` command.
 
 So instead of configuring i3 with something like:
 
@@ -159,13 +161,13 @@ bindsym $mod+l move up
 bindsym $mod+semicolon move right
 ```
 
-`move` commands can be forwarded to `i3-layouts` with `i3-msg`:
+`move` commands can be forwarded to `i3-layouts` via `i3l`:
 
 ```
-bindsym $mod+j exec i3-msg -t send_tick "i3-layouts move left"
-bindsym $mod+k exec i3-msg -t send_tick "i3-layouts move down"
-bindsym $mod+l exec i3-msg -t send_tick "i3-layouts move up"
-bindsym $mod+semicolon exec i3-msg -t send_tick "i3-layouts move right"
+bindsym $mod+j exec i3l move left
+bindsym $mod+k exec i3l move down
+bindsym $mod+l exec i3l move up
+bindsym $mod+semicolon exec i3l move right
 ```
 
 With this configuration, if a `move` command is executed on a workspace managed by `i3-layouts`, 
@@ -173,29 +175,35 @@ the moved window will stay within the layout. If the workspace is not managed by
  `i3-layout` will forward the `move` command to `i3`
 
 
-### Layouts
+## Layouts
 Each layout accept some specific parameters. 
 These parameters must be given is the order described below.
 
 #### vstack
 One main windows with a vertical stack of windows.
 
+![vstack](./img/vstack.gif)
+
 * **main window ratio** (float between `0` and `1`, default `0.5`): ratio of screen width used 
 by the main window
 * **secondary stack position** (`right` or `left`, default `right`): vertical stack position 
 relative to the main window
 
-#### hstack
+### hstack
 One main windows with an horizontal stack of windows.
+
+![hstack](./img/hstack.gif)
 
 * **main window ratio** (float between `0` and `1`, default `0.5`): ratio of screen height used 
 by the window stack
 * **secondary stack position** (`up` or `down`, default `down`): horizontal stack position 
 relative to the main window
 
-#### spiral
+### spiral
 Each new windows split the previous one, split direction alternates between
 horizontal and vertical.
+
+![spiral](./img/spiral.gif)
 
 * **split ratio** (float between `0` and `1`, default `0.5`): 
 ratio of width or height used by the previous container at each split, 
@@ -203,15 +211,19 @@ the remaining is used by the new container.
 * **screen direction** (`inside` or `outside`, default `inside`): 
 whether new container should be added towards the inside of the screen or the outside.
 
-#### 2columns
+### 2columns
 Two vertical stacks of equally sized windows.
 New window position alternates between the first and second stack.
+
+![2columns](./img/2columns.gif)
 
 * **first stack position** (`right` or `left`, default `left`): first stack position 
 relative to the second stack.
 
-#### 3columns
+### 3columns
 One main windows with two vertical stacks of windows.
+
+![3columns](./img/3columns.gif)
 
 * **main window ratio** [two columns] (float between `0` and `1`, default `0.5`): 
 ratio of screen width used by the main window when only two columns are present
@@ -226,8 +238,10 @@ relative to the main window. Note that the third column will have the opposite p
 (if the second columns is on the left of the main window, the third one will be on the right of 
 the main window)
 
-#### companion
+### companion
 Each columns is made of one main window and one smaller window (called companion container below).
+
+![companion](./img/companion.gif)
 
 * **odd companion ratio** (float between `0` and `1`, default `0.3`): 
 ratio of screen height used by the companion container for odd column index
@@ -240,8 +254,8 @@ the first column.
 
 ## Limitations
 
-* **Redraw**: when container are closed, or moved between workspace, `i3-layouts` needs to reposition
-some if not all containers of a given workspace. Right now, `i3-layouts` use `xdotool` 
+* **Redraw**: when container are closed or moved between workspace, `i3-layouts` needs to reposition
+some if not all containers of a given workspace. `i3-layouts` use `xdotool` 
 to simulate the recreation of these containers.
 * **Marks**: to keep track of container position, `i3-layouts` use i3wm marks. 
 More precisely, `i3-layouts` marks the first and last container of each workspace. 

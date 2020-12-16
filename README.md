@@ -90,7 +90,7 @@ in the [Layouts](#layouts) section.
 set $i3l [vstack|hstack|spiral|3columns|2columns|companion] <param> ... to workspace [workspace name]
 ```
 
-Standard i3 layouts can also be used:
+Standard layouts from i3 can also be used:
 
 ```
 set $i3l [tabbed|splitv|splith|stacking] to workspace [workspace name]

@@ -16,7 +16,7 @@ def on_tick(layouts: Layouts, state: State):
     def handle_move_tick(context: Context, action_params: List[str]):
         mover = Mover(context)
         if layouts.exists_for(context.workspace.name) and not layouts.get(context.workspace.name).is_i3():
-            logger.debug(f'  [ipc] tick event - move container')
+            logger.debug('  [ipc] tick event - move container')
             mover.move_to_direction(action_params[0])
         else:
             mover.forward(action_params[0])
@@ -88,12 +88,10 @@ def on_window_close(layouts: Layouts, state: State):
         if not layouts.exists_for(context.workspace.name):
             logger.debug('  [ipc] window close event - no workspace layout')
             return
-        if state.rebuild_closed_container(e.container.window):
-            state.remove_closed_container(e.container.window)
-            return
-        layout = layouts.get(context.workspace.name)
-        state.start_rebuild(RebuildCause.WINDOW_CLOSE, context,
-                            layout.mark_main(), layout.mark_last(), e.container.id)
+        if not state.rebuild_closed_container(e.container.window):
+            layout = layouts.get(context.workspace.name)
+            state.start_rebuild(RebuildCause.WINDOW_CLOSE, context,
+                                layout.mark_main(), layout.mark_last(), e.container.id)
 
     return _on_window_close
 
@@ -136,11 +134,6 @@ def on_window_new(layouts: Layouts, state: State):
         layout = layouts.get(context.workspace.name)
         layout.update(context, e.container)
 
-        if not state.has_rebuild_in_progress():
-            state.end_rebuild(context, RebuildCause.WINDOW_NEW)
-        elif state.is_rebuild_finished():
-            state.end_rebuild(context)
-        else:
-            state.recreate_next_window(context)
+        state.handle_rebuild(context, e.container)
 
     return _on_window_new

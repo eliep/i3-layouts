@@ -30,7 +30,7 @@ class Mover:
         destination = self._shortest_distance(origin, candidates)
         if destination is not None:
             self._switch_marks(origin, destination)
-            self._switch_window_numbers(origin, destination)
+            self._context.workspace_sequence.switch_container_order(origin, destination)
             self._context.exec(f'swap container with con_id {destination.id}')
 
     def _destination_candidates(self, direction: str, origin: Con) -> List[Con]:
@@ -63,14 +63,6 @@ class Mover:
                 self._context.exec(f'[con_id="{origin.id}"] mark {mark}')
         for mark in origin_marks:
             self._context.exec(f'[con_id="{destination.id}"] mark {mark}')
-
-    def _switch_window_numbers(self, origin: Con, destination: Con):
-        numbers = self._context.workspace_sequence.window_numbers
-        for con_id, number in numbers.items():
-            if con_id == origin.id:
-                numbers[destination.id] = number
-            elif con_id == destination.id:
-                numbers[origin.id] = number
 
     @classmethod
     def _shortest_distance(cls, origin: Con, containers: List[Con]) -> Optional[Con]:

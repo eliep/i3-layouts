@@ -34,23 +34,33 @@ class RebuildCause(Enum):
 
 class WorkspaceSequence:
     def __init__(self):
-        self.window_count = 0
-        self.window_numbers: Dict[int, int] = {}
+        self._container_count = 0
+        self._container_orders: Dict[int, int] = {}
         self.is_stale = False
         self.stale_con_id = 0
 
+    def contains(self, con_id: int):
+        return con_id in self._container_orders
+
     def set_order(self, container: Con):
-        self.window_count += 1
-        self.window_numbers[container.id] = self.window_count
+        self._container_count += 1
+        self._container_orders[container.id] = self._container_count
 
     def get_order(self, con_id: int) -> Optional[int]:
-        return self.window_numbers[con_id] if con_id in self.window_numbers else None
+        return self._container_orders[con_id] if con_id in self._container_orders else None
+
+    def switch_container_order(self, origin: Con, destination: Con):
+        for con_id, number in self._container_orders.items():
+            if con_id == origin.id:
+                self._container_orders[destination.id] = number
+            elif con_id == destination.id:
+                self._container_orders[origin.id] = number
 
     def set_stale(self, stale: bool, con_id: int = 0):
         self.is_stale = stale
         if con_id == 0 or \
                 self.stale_con_id == 0 or \
-                self.window_numbers[con_id] < self.window_numbers[self.stale_con_id]:
+                self._container_orders[con_id] < self._container_orders[self.stale_con_id]:
             self.stale_con_id = con_id
 
 
@@ -124,6 +134,7 @@ class RebuildAction:
         self.rebuild_cause: Optional[RebuildCause] = None
         self.containers_to_close: List[int] = []
         self.containers_to_recreate: List[int] = []
+        self.container_id_to_focus: Optional[int] = None
 
     @staticmethod
     def _containers_after(con_id: int, containers: List[Con], workspace_sequence: WorkspaceSequence):
@@ -136,7 +147,7 @@ class RebuildAction:
             self.rebuild_cause = rebuild_cause
 
         containers = context.sorted_containers()
-        if len(containers) == 0 or (con_id != 0 and con_id not in context.workspace_sequence.window_numbers):
+        if len(containers) == 0 or (con_id != 0 and not context.workspace_sequence.contains(con_id)):
             self.end_rebuild(context)
             return
 
@@ -159,6 +170,9 @@ class RebuildAction:
     def end_rebuild(self, context: Context, cause: RebuildCause = None):
         rebuild_cause = self.rebuild_cause if cause is None else cause
         context.send_tick(f'i3-layouts rebuild {rebuild_cause.value}')
+        if self.container_id_to_focus is not None:
+            context.exec(f'[con_id="{self.container_id_to_focus}"] focus')
+            self.container_id_to_focus = None
         if cause is None or self.rebuild_cause is None:
             self.rebuild_cause = None
 
@@ -183,26 +197,27 @@ class State:
         self.context = Context(i3l, tree, workspace_sequence)
         return self.context
 
-    def has_rebuild_in_progress(self) -> bool:
-        return self.rebuild_action.rebuild_cause is not None
-
-    def is_rebuild_finished(self) -> bool:
-        return self.has_rebuild_in_progress() and len(self.rebuild_action.containers_to_recreate) == 0
-
-    def rebuild_closed_container(self, window_id: int) -> bool:
-        return window_id in self.rebuild_action.containers_to_close
+    def handle_rebuild(self, context: Context, container: Con):
+        if self.rebuild_action.rebuild_cause is None:
+            self.end_rebuild(context, RebuildCause.WINDOW_NEW)
+        elif len(self.rebuild_action.containers_to_recreate) == 0:
+            self.end_rebuild(context)
+        else:
+            if self.rebuild_action.container_id_to_focus is None:
+                self.rebuild_action.container_id_to_focus = container.id
+            container_window_id = self.rebuild_action.containers_to_recreate.pop(0)
+            context.xdo_map_window(container_window_id)
 
     def start_rebuild(self, rebuild_cause: RebuildCause, context: Context,
                       main_mark: str, last_mark: str, con_id: int = 0):
         logger.debug(f'[state] rebuilding for {rebuild_cause}')
         self.rebuild_action.start_rebuild(context, rebuild_cause, main_mark, last_mark, con_id)
 
-    def recreate_next_window(self, context: Context):
-        container_window_id = self.rebuild_action.containers_to_recreate.pop(0)
-        context.xdo_map_window(container_window_id)
-
-    def remove_closed_container(self, window_id: int):
-        self.rebuild_action.containers_to_close.remove(window_id)
+    def rebuild_closed_container(self, window_id: int) -> bool:
+        if window_id in self.rebuild_action.containers_to_close:
+            self.rebuild_action.containers_to_close.remove(window_id)
+            return True
+        return False
 
     def end_rebuild(self, context: Context, cause: RebuildCause = None):
         self.rebuild_action.end_rebuild(context, cause)
@@ -216,7 +231,7 @@ class State:
             self.workspace_sequences[workspace_name] = workspace_sequence
         if self.context.workspace.name == workspace_name:
             for container in self.context.containers:
-                if container.id not in self.workspace_sequences[workspace_name].window_numbers:
+                if not self.workspace_sequences[workspace_name].contains(container.id):
                     self.workspace_sequences[workspace_name].set_order(container)
                     self.workspace_sequences[workspace_name].set_stale(True)
         self.context.workspace_sequence = self.workspace_sequences[workspace_name]

@@ -14,7 +14,7 @@ class Variable:
 
     @staticmethod
     def extract_var(command) -> Optional['Variable']:
-        match = re.match('set (\\$[^ ]*) ("?[^"]*"?)', command)
+        match = re.match('set[\t ]+(\\$[^ \t]*)[\t ]+("?[^"]*"?)', command)
         if match:
             try:
                 return Variable(match.group(1), match.group(2))
@@ -54,7 +54,7 @@ class WorkspaceLayout:
         if match:
             try:
                 layout_name = match.group(1)
-                layout_params = match.group(2).split(' ')
+                layout_params = match.group(2).rstrip().split(' ') if len(match.group(2).rstrip()) > 0 else []
                 workspace_name = match.group(3)
                 return WorkspaceLayout(layout_name, layout_params, workspace_name)
             except IndexError:

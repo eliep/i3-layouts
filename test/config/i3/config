@@ -39,8 +39,12 @@ set $ws5 "5"
 set $ws6 "6"
 set $ws7 "7"
 set $ws8 "8"
-set $ws9 "9"
-set $ws10 "10"
+set   $ws9 "9"
+set   $ws10   "10"
+
+set $i3l   spiral 0.6 outside to workspace $ws8
+set  $i3l  vstack 0.3 to workspace $ws9
+set   $i3l hstack to workspace $ws10
 
 # reload the configuration file
 bindsym Mod1+Shift+c reload

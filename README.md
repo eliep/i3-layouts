@@ -16,8 +16,10 @@ horizontal and vertical.
 - `2columns`: two vertical stacks of equally sized windows.
 - `3columns`: one main windows with two vertical stacks of windows.
 - `companion`: each columns is made of one main window and one smaller window.
+- `autosplit`: automatically choose between vsplit/hsplit depending on the focused windows 
+(inspired by [autotiling](https://github.com/nwg-piotr/autotiling)).
 
-Parameters for each one of these layouts is detailled in the [Layout section](#layouts). 
+Parameters for each one of these layouts is detailed in the [Layout section](#layouts). 
 
 * [Installation](#installation)
   - [Requirements](#requirements)
@@ -35,6 +37,7 @@ Parameters for each one of these layouts is detailled in the [Layout section](#l
   - [2columns](#2columns)
   - [3columns](#3columns)
   - [companion](#companion)
+  - [autoplit](#autoplit)
 * [Limitations](#limitations)
 
 ## Installation
@@ -87,7 +90,7 @@ in the [Layouts](#layouts) section.
 **Syntax:**
 
 ```
-set $i3l [vstack|hstack|spiral|3columns|2columns|companion] <param> ... to workspace [workspace name]
+set $i3l [vstack|hstack|spiral|3columns|2columns|companion|autosplit] <param> ... to workspace [workspace name]
 ```
 
 Standard layouts from i3 can also be used:
@@ -108,6 +111,7 @@ set $i3l spiral 0.6 to workspace $ws3
 set $i3l 3columns 0.66 0.5 2 left to workspace $ws4
 set $i3l 2columns right to workspace $ws5
 set $i3l companion 0.3 0.4 up to workspace $ws6
+set $i3l autosplit to workspace $ws7
 ```
 
 
@@ -133,13 +137,13 @@ i3l vstack 0.6
 i3l none
 ```
 
-i3 can also be leverage to switch layout on with a key binding, for example:
+Layout can also be switched with a key binding via `i3l`, for example:
  
 ```
 bindsym $mod+s exec i3l vstack 0.6
 ```
 
-Chaining the previous command with `notify-send` allows to receive a quick notification of the current layout:
+Use `notify-send` after the previous command to receive a quick notification of the current layout:
 
 ```
 bindsym $mod+s exec i3l vstack 0.6 && notify-send 'Layout vstack'
@@ -251,6 +255,14 @@ ratio of screen height used by the companion container for even column index
 position of the companion container relative to the main window. `alt-up` and `alt-down`
 alternate this position for each column, starting respectively at `up` and `down` for
 the first column.
+
+### autosplit
+Windows are automatically split either vertically or horizontally depending on 
+the focused window dimension.
+
+![autosplit](./img/autosplit.gif)
+
+This layout has no parameters.
 
 ## Limitations
 

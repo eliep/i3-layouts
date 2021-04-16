@@ -5,7 +5,7 @@ import sys
 from i3ipc import Connection, Event
 
 from i3l.config import WorkspaceLayout
-from i3l.handlers import on_window_new, on_window_close, on_workspace_focus, on_window_move, on_tick
+from i3l.handlers import on_window_new, on_window_close, on_workspace_focus, on_window_move, on_tick, on_window_focus
 from i3l.state import State
 from i3l.layouts import Layouts
 
@@ -31,6 +31,7 @@ def connect():
     state = State(i3)
     i3.on(Event.WORKSPACE_FOCUS, on_workspace_focus(layouts, state))
     i3.on(Event.WINDOW_NEW, on_window_new(layouts, state))
+    i3.on(Event.WINDOW_FOCUS, on_window_focus(layouts, state))
     i3.on(Event.WINDOW_MOVE, on_window_move(layouts, state))
     i3.on(Event.WINDOW_CLOSE, on_window_close(layouts, state))
     i3.on(Event.TICK, on_tick(layouts, state))

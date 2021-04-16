@@ -5,6 +5,7 @@ from i3ipc.events import WorkspaceEvent, WindowEvent
 import logging
 
 from i3l.mover import Mover
+from i3l.options import LayoutName
 from i3l.state import State, RebuildCause, Context, is_layout_container
 from i3l.layouts import Layouts
 
@@ -137,3 +138,26 @@ def on_window_new(layouts: Layouts, state: State):
         state.handle_rebuild(context, e.container)
 
     return _on_window_new
+
+
+def on_window_focus(layouts: Layouts, state: State):
+
+    def _on_window_focus(i3l: Connection, e: WindowEvent):
+        logger.debug(f'[ipc] window focus event - container:{e.container.id}:{e.container.window}')
+        context = state.sync_context(i3l)
+        layout = layouts.get(context.workspace.name)
+        focused_container = i3l.get_tree().find_focused()
+        if layout is None or layout.name != LayoutName.AUTOSPLIT:
+            logger.debug('  [ipc] window focus event - workspace layout not autosplit')
+            return
+        if not is_layout_container(focused_container):
+            logger.debug('  [ipc] window focus event - not a layout container')
+            return
+        context.workspace_sequence.set_order(e.container)
+
+        logger.debug('  [ipc] window focus event - update layout')
+        layout.update(context, focused_container)
+
+        # state.handle_rebuild(context, e.container)
+
+    return _on_window_focus

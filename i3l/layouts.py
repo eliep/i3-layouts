@@ -91,23 +91,13 @@ class Stack(Layout):
     def stack_direction(self, context: Context) -> Optional[Direction]:
         return self._first_direction().opposite()
 
-    # def _split_indices(self):
-    #     return [1, 2]
-    #
-    # def _split_direction(self, context: Context):
-    #     return self._first_direction().value if len(context.containers) == 1 else self._second_direction().value
-
     def _update(self, context: Context):
-        # if len(context.containers) == 1:
-        #     context.exec(f'split {self._first_direction().value}')
-        # el
         if len(context.containers) == 2:
             context.exec(f'[con_id="{context.focused.id}"] move {self.second_axe_position.value}')
             context.exec(f'[con_id="{context.focused.id}"] move {self.second_axe_position.value}')
             size = context.workspace_width(1 - self.main_ratio) \
                 if self._resize_direction() == ResizeDirection.WIDTH else context.workspace_height(1 - self.main_ratio)
             context.exec(f'resize set {self._resize_direction().value} {size}')
-            # context.exec(f'split {self._second_direction().value}')
 
     def _first_direction(self) -> Direction:
         pass
@@ -373,6 +363,28 @@ class ThreeColumns(Layout):
         return ThreeColumns(workspace_name, params)
 
 
+class Autosplit(Layout):
+
+    def __init__(self, layout_name: LayoutName, workspace_name: str):
+        super().__init__(layout_name, workspace_name)
+
+    def _params(self) -> List[Any]:
+        return []
+
+    def anchor_mark(self) -> Optional[str]:
+        return None
+
+    def _update(self, context: Context):
+        direction = Direction.VERTICAL \
+            if context.focused.rect.height > context.focused.rect.width \
+            else Direction.HORIZONTAL
+        context.exec(f'[con_id="{context.focused.id}"] split {direction.value}')
+
+    @classmethod
+    def create(cls, workspace_name: str, params: List[Any]) -> Optional['Layout']:
+        return Autosplit(LayoutName.AUTOSPLIT, workspace_name)
+
+
 class I3Layout(Layout):
 
     def __init__(self, layout_name: LayoutName, workspace_name: str):
@@ -439,6 +451,7 @@ class Layouts:
         LayoutName.TWO_COLUMNS: TwoColumns,
         LayoutName.THREE_COLUMNS: ThreeColumns,
         LayoutName.COMPANION: Companion,
+        LayoutName.AUTOSPLIT: Autosplit,
         LayoutName.TABBED: Tabbed,
         LayoutName.SPLITV: SplitV,
         LayoutName.SPLITH: SplitH,

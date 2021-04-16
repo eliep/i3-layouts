@@ -8,6 +8,7 @@ class LayoutName(Enum):
     THREE_COLUMNS = '3columns'
     TWO_COLUMNS = '2columns'
     COMPANION = 'companion'
+    AUTOSPLIT = 'autosplit'
     TABBED = 'tabbed'
     SPLITV = 'splitv'
     SPLITH = 'splith'

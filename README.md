@@ -37,7 +37,7 @@ Parameters for each one of these layouts is detailed in the [Layout section](#la
   - [2columns](#2columns)
   - [3columns](#3columns)
   - [companion](#companion)
-  - [autoplit](#autoplit)
+  - [autosplit](#autosplit)
 * [Limitations](#limitations)
 
 ## Installation

@@ -22,6 +22,7 @@ class RebuildCause(Enum):
     LAYOUT_CHANGE_2COLUMNS = 'layout_change_2columns'
     LAYOUT_CHANGE_3COLUMNS = 'layout_change_3columns'
     LAYOUT_CHANGE_TABBED = 'layout_change_tabbed'
+    LAYOUT_CHANGE_AUTOSPLIT = 'layout_change_autosplit'
     WORKSPACE_FOCUS = 'workspace_focus'
     WINDOW_CLOSE = 'window_close'
     WINDOW_MOVE = 'window_move'

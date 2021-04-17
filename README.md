@@ -127,7 +127,7 @@ they will be rearranged to match the selected layout.
 **Syntax:**
 
 ```
-i3l [vstack|hstack|spiral|3columns|2columns|companion|none] <param> ...
+i3l [vstack|hstack|spiral|3columns|2columns|companion|autosplit|none] <param> ...
 ```
  
 **Examples:**

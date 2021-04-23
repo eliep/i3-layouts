@@ -51,11 +51,14 @@ class WorkspaceSequence:
         return self._container_orders[con_id] if con_id in self._container_orders else None
 
     def switch_container_order(self, origin: Con, destination: Con):
+        origin_number = destination_number = None
         for con_id, number in self._container_orders.items():
             if con_id == origin.id:
-                self._container_orders[destination.id] = number
+                origin_number = number
             elif con_id == destination.id:
-                self._container_orders[origin.id] = number
+                destination_number = number
+        self._container_orders[destination.id] = origin_number
+        self._container_orders[origin.id] = destination_number
 
     def set_stale(self, stale: bool, con_id: int = 0):
         self.is_stale = stale
@@ -161,11 +164,11 @@ class RebuildAction:
             container_window_id = self.containers_to_recreate.pop(0)
             context.xdo_map_window(container_window_id)
         elif len(containers) == 1:
-            context.exec(f'[con_id="{containers[-1].id}"] mark {main_mark}')
+            context.exec(f'[con_id="{containers[-1].id}"] mark --add {main_mark}')
             context.exec(f'[con_id="{containers[-1].id}"] mark --add {last_mark}')
             self.end_rebuild(context)
         else:
-            context.exec(f'[con_id="{containers[-1].id}"] mark {last_mark}')
+            context.exec(f'[con_id="{containers[-1].id}"] mark --add {last_mark}')
             self.end_rebuild(context)
 
     def end_rebuild(self, context: Context, cause: RebuildCause = None):

@@ -25,13 +25,16 @@ class Layout(Splittable):
     def is_i3(self) -> bool:
         return False
 
+    def swap_mark_last(self) -> bool:
+        return True
+
     def _params(self) -> List[Any]:
         pass
 
     def anchor_mark(self) -> Optional[str]:
         pass
 
-    def get_workspace_name(self):
+    def get_workspace_name(self) -> str:
         return self.workspace_name
 
     def split_direction(self, context: Context) -> Optional[Direction]:
@@ -50,7 +53,7 @@ class Layout(Splittable):
 
         self._update(context)
 
-        context.exec(f'mark {self.mark_last()}')
+        context.exec(f'mark --add {self.mark_last()}')
         if len(containers) == 1:
             context.exec(f'mark --add {self.mark_main()}')
 
@@ -367,6 +370,9 @@ class Autosplit(Layout):
 
     def __init__(self, layout_name: LayoutName, workspace_name: str):
         super().__init__(layout_name, workspace_name)
+
+    def swap_mark_last(self) -> bool:
+        return False
 
     def _params(self) -> List[Any]:
         return []

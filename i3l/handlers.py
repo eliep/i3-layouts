@@ -1,38 +1,17 @@
-from typing import List
-
 from i3ipc import Connection, TickEvent
 from i3ipc.events import WorkspaceEvent, WindowEvent
 import logging
 
-from i3l.mover import Mover
 from i3l.options import LayoutName
-from i3l.state import State, RebuildCause, Context, is_layout_container
+from i3l.splitter import Mark
+from i3l.state import State, RebuildCause, is_layout_container
 from i3l.layouts import Layouts
+from i3l.ticks import Tick
 
 logger = logging.getLogger(__name__)
 
 
 def on_tick(layouts: Layouts, state: State):
-
-    def handle_move_tick(context: Context, action_params: List[str]):
-        mover = Mover(context)
-        if layouts.exists_for(context.workspace.name) and not layouts.get(context.workspace.name).is_i3():
-            logger.debug('  [ipc] tick event - move container')
-            mover.move_to_direction(action_params[0])
-        else:
-            mover.forward(action_params[0])
-
-    def handle_layout_tick(context: Context, action_name: str, action_params: List[str]):
-        layout = Layouts.create(action_name, action_params, context.workspace.name)
-        if layout is not None:
-            logger.debug(f'  [ipc] tick event - set workspace layout to {action_name}')
-            layouts.add(layout)
-            state.add_workspace_sequence(context.workspace.name)
-            state.start_rebuild(RebuildCause.layout_change(action_name), context,
-                                layout.mark_main(), layout.mark_last())
-        else:
-            logger.debug('  [ipc] tick event - unset workspace layout')
-            layouts.remove(context.workspace.name)
 
     def _on_tick(i3l: Connection, e: TickEvent):
         logger.debug(f'[ipc] tick event - payload:{e.payload}')
@@ -42,12 +21,9 @@ def on_tick(layouts: Layouts, state: State):
         tokens = e.payload.split(' ')
         action_name = tokens[1]
         action_params = tokens[2:]
-        if action_name == 'rebuild':
-            pass
-        elif action_name == 'move':
-            handle_move_tick(context, action_params)
-        else:
-            handle_layout_tick(context, action_name, action_params)
+        tick = Tick.create(layouts, state, action_name)
+        if tick is not None:
+            tick.do(context, action_params)
 
     return _on_tick
 
@@ -147,17 +123,21 @@ def on_window_focus(layouts: Layouts, state: State):
         context = state.sync_context(i3l)
         layout = layouts.get(context.workspace.name)
         focused_container = i3l.get_tree().find_focused()
-        if layout is None or layout.name != LayoutName.AUTOSPLIT:
-            logger.debug('  [ipc] window focus event - workspace layout not autosplit')
-            return
         if not is_layout_container(focused_container):
             logger.debug('  [ipc] window focus event - not a layout container')
             return
-        context.workspace_sequence.set_order(e.container)
+        previous_mark = Mark.previous()
+        current_mark = Mark.current()
+        i3l.command(f'[con_mark="{current_mark}"] mark --add {previous_mark}')
+        i3l.command(f'[con_id="{focused_container.id}"] mark --add {current_mark}')
+        if layout is None:
+            logger.debug('  [ipc] window focus event - no workspace layout')
+            return
+        if layout.name != LayoutName.AUTOSPLIT:
+            logger.debug('  [ipc] window focus event - workspace layout not autosplit')
+            return
 
         logger.debug('  [ipc] window focus event - update layout')
         layout.update(context, focused_container)
-
-        # state.handle_rebuild(context, e.container)
 
     return _on_window_focus

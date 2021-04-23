@@ -5,16 +5,53 @@ from i3l.options import Direction
 from i3l.state import Context
 
 
+class Mark:
+
+    MAIN = 'main'
+    LAST = 'last'
+    PREVIOUS = 'previous'
+    CURRENT = 'current'
+
+    @staticmethod
+    def mark(mark: str, workspace_name: str = None):
+        return f'i3l:{workspace_name}:{mark}' if workspace_name is not None else f'i3l::{mark}'
+
+    @classmethod
+    def main(cls, workspace_name: str) -> str:
+        return cls.mark(Mark.MAIN, workspace_name)
+
+    @classmethod
+    def last(cls, workspace_name: str) -> str:
+        return cls.mark(Mark.LAST, workspace_name)
+
+    @classmethod
+    def previous(cls) -> str:
+        return cls.mark(Mark.PREVIOUS)
+
+    @classmethod
+    def current(cls) -> str:
+        return cls.mark(Mark.CURRENT)
+
+    @staticmethod
+    def any(mark: str, suffixes: List[str]):
+        mark_suffix = mark.split(':')[-1]
+        return mark_suffix in suffixes
+
+    @staticmethod
+    def belongs_to(mark: str, workspace_name: str):
+        return not (mark.startswith('i3l') and (mark.split(':')[1] != '' and mark.split(':')[1] != workspace_name))
+
+
 class Markable:
 
-    def get_workspace_name(self):
+    def get_workspace_name(self) -> str:
         pass
 
-    def mark_main(self):
-        return f'i3l:{self.get_workspace_name()}:main'
+    def mark_main(self) -> str:
+        return Mark.main(self.get_workspace_name())
 
-    def mark_last(self):
-        return f'i3l:{self.get_workspace_name()}:last'
+    def mark_last(self) -> str:
+        return Mark.last(self.get_workspace_name())
 
 
 class Splittable(Markable):

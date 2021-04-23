@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from i3ipc import Con
 
+from i3l.splitter import Mark
 from i3l.state import Context
 
 
@@ -24,14 +25,20 @@ class Mover:
         if direction is not None:
             self._context.exec(f'move {direction}')
 
-    def move_to_direction(self, direction: str):
+    def move_to_direction(self, direction: str, swap_mark_last: bool):
         origin = self._context.focused
         candidates = self._destination_candidates(direction, origin)
         destination = self._shortest_distance(origin, candidates)
         if destination is not None:
-            self._switch_marks(origin, destination)
-            self._context.workspace_sequence.switch_container_order(origin, destination)
-            self._context.exec(f'swap container with con_id {destination.id}')
+            self.swap(destination, swap_mark_last)
+
+    def swap(self, destination: Con, swap_mark_last: bool, swap_marks=None):
+        if swap_marks is None:
+            swap_marks = []
+        self._switch_marks(destination, swap_mark_last, swap_marks)
+        if self._context.workspace_sequence is not None:
+            self._context.workspace_sequence.switch_container_order(self._context.focused, destination)
+        self._context.exec(f'swap container with con_id {destination.id}')
 
     def _destination_candidates(self, direction: str, origin: Con) -> List[Con]:
         def vertical_overlap(candidate: Con):
@@ -56,13 +63,19 @@ class Mover:
                           if factor * con.rect.y < factor * origin.rect.y and overlap()(con)]
         return candidates
 
-    def _switch_marks(self, origin: Con, destination: Con):
-        origin_marks = [mark for mark in origin.marks if mark.startswith('i3l')]
+    def _switch_marks(self, destination: Con, swap_mark_last: bool, swap_marks=None):
+        if swap_marks is None:
+            swap_marks = []
+        origin_mark = [mark for mark in self._context.focused.marks]
+        mark_to_swap = [Mark.MAIN, Mark.LAST] + swap_marks if swap_mark_last else [Mark.MAIN] + swap_marks
         for mark in destination.marks:
-            if mark.startswith('i3l'):
-                self._context.exec(f'[con_id="{origin.id}"] mark {mark}')
-        for mark in origin_marks:
-            self._context.exec(f'[con_id="{destination.id}"] mark {mark}')
+            if Mark.any(mark, mark_to_swap):
+                self._context.exec(f'[con_id="{self._context.focused.id}"] mark --add {mark}')
+            if not Mark.belongs_to(mark, self._context.workspace.name):
+                self._context.exec(f'[con_id="{destination.id}"] unmark {mark}')
+        for mark in origin_mark:
+            if Mark.any(mark, mark_to_swap):
+                self._context.exec(f'[con_id="{destination.id}"] mark --add {mark}')
 
     @classmethod
     def _shortest_distance(cls, origin: Con, containers: List[Con]) -> Optional[Con]:

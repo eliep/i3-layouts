@@ -30,6 +30,7 @@ Parameters for each one of these layouts is detailed in the [Layout section](#la
   - [Assigning a layout to a workspace](#assigning-a-layout-to-a-workspace)
   - [Switching layout](#switching-layout)
   - [Moving windows inside the layout](#moving-windows-inside-the-layout)
+  - [Swapping windows](#swapping-windows)
 * [Layouts](#layouts)
   - [vstack](#vstack)
   - [hstack](#hstack)
@@ -178,6 +179,26 @@ With this configuration, if a `move` command is executed on a workspace managed 
 the moved window will stay within the layout. If the workspace is not managed by `i3-layout`,
  `i3-layout` will forward the `move` command to `i3`
 
+
+### Swapping windows
+
+Because `i3-layout` uses marks to keep track of container position, it must know about all
+swap commands occurring within a layout.
+
+Like `move` commands, `swap` commands can be forwarded to `i3-layouts` via `i3l`:
+
+```
+bindsym $mod+s exec i3l swap container with mark <arg>
+```
+
+Note that currently, only the swap command `with mark` is implemented
+(so `swap container with id <arg>` or `swap container with con_id <arg>` will not work).
+ 
+To swap the focused container with the previously focused one, a custom command is also provided:
+
+```
+bindsym $mod+p exec i3l swap container with previous
+```
 
 ## Layouts
 Each layout accept some specific parameters. 

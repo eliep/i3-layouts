@@ -153,7 +153,7 @@ class RebuildAction:
         self.containers_to_close: List[int] = []
         self.containers_to_recreate: List[RebuildContainer] = []
         self.container_id_to_focus: Optional[int] = None
-        self.last_container_window_recreated: Optional[int] = None
+        self.last_container_rebuilt: Optional[RebuildContainer] = None
 
     @staticmethod
     def _containers_after(con_id: int,
@@ -178,8 +178,8 @@ class RebuildAction:
             for rebuild_container in self.containers_to_recreate:
                 context.xdo_unmap_window(rebuild_container.window)
                 self.containers_to_close.append(rebuild_container.window)
-            self.last_container_window_recreated = self.containers_to_recreate.pop(0)
-            context.xdo_map_window(self.last_container_window_recreated)
+            self.last_container_rebuilt = self.containers_to_recreate.pop(0)
+            context.xdo_map_window(self.last_container_rebuilt)
         elif len(containers) == 1:
             context.exec(f'[con_id="{containers[-1].id}"] mark --add {main_mark}')
             context.exec(f'[con_id="{containers[-1].id}"] mark --add {last_mark}')
@@ -189,8 +189,8 @@ class RebuildAction:
             self.end_rebuild(context)
 
     def next_rebuild(self, context: Context):
-        self.last_container_window_recreated = self.containers_to_recreate.pop(0)
-        context.xdo_map_window(self.last_container_window_recreated)
+        self.last_container_rebuilt = self.containers_to_recreate.pop(0)
+        context.xdo_map_window(self.last_container_rebuilt)
 
     def end_rebuild(self, context: Context, cause: RebuildCause = None):
         rebuild_cause = self.rebuild_cause if cause is None else cause
@@ -245,6 +245,10 @@ class State:
 
     def end_rebuild(self, context: Context, cause: RebuildCause = None):
         self.rebuild_action.end_rebuild(context, cause)
+
+    def is_last_container_rebuilt(self, container: Con):
+        return self.rebuild_action.last_container_rebuilt is not None and \
+            self.rebuild_action.last_container_rebuilt.window == container.window
 
     def get_workspace_sequence(self, workspace_name: str) -> Optional[WorkspaceSequence]:
         return self.workspace_sequences[workspace_name] if workspace_name in self.workspace_sequences else None

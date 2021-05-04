@@ -102,11 +102,7 @@ def on_window_new(layouts: Layouts, state: State):
         if not layouts.exists_for(context.workspace.name) or context.workspace_sequence is None:
             logger.debug('  [ipc] window new event - no workspace layout')
             return
-        if state.rebuild_action.last_container_window_recreated == e.container.window:
-            state.rebuild_action.last_container_recreated = None
-            if is_floating_container(e.container):
-                context.exec(f'[con_id={e.container.id}] floating disable')
-        elif not is_layout_container(e.container):
+        if not is_layout_container(e.container):
             logger.debug('  [ipc] window new event - not a layout container')
             return
         context.workspace_sequence.set_order(e.container)
@@ -125,8 +121,13 @@ def on_window_floating(layouts: Layouts, state: State):
     def _on_window_floating(i3l: Connection, e: WindowEvent):
         logger.debug(f'[ipc] window floating event - container:{e.container.id}:{e.container.window}')
         if is_floating_container(e.container):
-            state.rebuild_action.container_id_to_focus = e.container.id
-            on_window_close(layouts, state)(i3l, e)
+            if not state.is_last_container_rebuilt(e.container):
+                state.rebuild_action.container_id_to_focus = e.container.id
+                on_window_close(layouts, state)(i3l, e)
+            else:
+                state.rebuild_action.last_container_rebuilt = None
+                context = state.sync_context(i3l)
+                context.exec(f'[con_id={e.container.id}] floating disable')
         else:
             on_window_new(layouts, state)(i3l, e)
 

@@ -9,9 +9,12 @@ from i3ipc import Con, Connection, CommandReply, TickReply
 logger = logging.getLogger(__name__)
 
 
+def is_floating_container(container: Con) -> bool:
+    return container.floating == 'auto_on' or container.floating == 'user_on'
+
+
 def is_layout_container(container: Con) -> bool:
-    return container.window is not None and container.type == 'con' \
-        and container.floating != 'auto_on' and container.floating != 'user_on'
+    return container.window is not None and container.type == 'con' and not is_floating_container(container)
 
 
 class RebuildCause(Enum):
@@ -68,6 +71,16 @@ class WorkspaceSequence:
             self.stale_con_id = con_id
 
 
+class RebuildContainer:
+
+    def __init__(self, container: Con):
+        self.window = container.window
+        self.x = container.geometry.x
+        self.y = container.geometry.y
+        self.width = container.geometry.width
+        self.height = container.geometry.height
+
+
 class Context:
     def __init__(self,
                  i3l: Connection,
@@ -106,10 +119,11 @@ class Context:
         command = shlex.split(f'xdotool windowunmap {window_id}')
         subprocess.run(command)
 
-    def xdo_map_window(self, window_id: Optional[int] = None):
-        if window_id is None:
-            window_id = self.focused.window
-        command = shlex.split(f'xdotool windowmap {window_id}')
+    def xdo_map_window(self, rebuild_container: RebuildContainer):
+        window_id = rebuild_container.window
+        command = shlex.split(f'xdotool windowsize {window_id} {rebuild_container.width} {rebuild_container.height} '
+                              f'windowmove {window_id} {rebuild_container.x} {rebuild_container.y} '
+                              f'windowmap {window_id}')
         subprocess.run(command)
 
     def resync(self) -> 'Context':
@@ -137,12 +151,15 @@ class RebuildAction:
     def __init__(self):
         self.rebuild_cause: Optional[RebuildCause] = None
         self.containers_to_close: List[int] = []
-        self.containers_to_recreate: List[int] = []
+        self.containers_to_recreate: List[RebuildContainer] = []
         self.container_id_to_focus: Optional[int] = None
+        self.last_container_window_recreated: Optional[int] = None
 
     @staticmethod
-    def _containers_after(con_id: int, containers: List[Con], workspace_sequence: WorkspaceSequence):
-        return [con.window for con in containers
+    def _containers_after(con_id: int,
+                          containers: List[Con],
+                          workspace_sequence: WorkspaceSequence) -> List[RebuildContainer]:
+        return [RebuildContainer(con) for con in containers
                 if con_id == 0 or workspace_sequence.get_order(con.id) >= workspace_sequence.get_order(con_id)]
 
     def start_rebuild(self, context: Context, rebuild_cause: RebuildCause,
@@ -158,11 +175,11 @@ class RebuildAction:
         self.containers_to_recreate = self._containers_after(con_id, containers, context.workspace_sequence)
         self.containers_to_close = []
         if len(self.containers_to_recreate) > 0:
-            for container_window_id in self.containers_to_recreate:
-                context.xdo_unmap_window(container_window_id)
-                self.containers_to_close.append(container_window_id)
-            container_window_id = self.containers_to_recreate.pop(0)
-            context.xdo_map_window(container_window_id)
+            for rebuild_container in self.containers_to_recreate:
+                context.xdo_unmap_window(rebuild_container.window)
+                self.containers_to_close.append(rebuild_container.window)
+            self.last_container_window_recreated = self.containers_to_recreate.pop(0)
+            context.xdo_map_window(self.last_container_window_recreated)
         elif len(containers) == 1:
             context.exec(f'[con_id="{containers[-1].id}"] mark --add {main_mark}')
             context.exec(f'[con_id="{containers[-1].id}"] mark --add {last_mark}')
@@ -170,6 +187,10 @@ class RebuildAction:
         else:
             context.exec(f'[con_id="{containers[-1].id}"] mark --add {last_mark}')
             self.end_rebuild(context)
+
+    def next_rebuild(self, context: Context):
+        self.last_container_window_recreated = self.containers_to_recreate.pop(0)
+        context.xdo_map_window(self.last_container_window_recreated)
 
     def end_rebuild(self, context: Context, cause: RebuildCause = None):
         rebuild_cause = self.rebuild_cause if cause is None else cause
@@ -209,8 +230,7 @@ class State:
         else:
             if self.rebuild_action.container_id_to_focus is None:
                 self.rebuild_action.container_id_to_focus = container.id
-            container_window_id = self.rebuild_action.containers_to_recreate.pop(0)
-            context.xdo_map_window(container_window_id)
+            self.rebuild_action.next_rebuild(context)
 
     def start_rebuild(self, rebuild_cause: RebuildCause, context: Context,
                       main_mark: str, last_mark: str, con_id: int = 0):

@@ -4,7 +4,7 @@ import logging
 
 from i3l.options import LayoutName
 from i3l.splitter import Mark
-from i3l.state import State, RebuildCause, is_layout_container
+from i3l.state import State, RebuildCause, is_layout_container, is_floating_container
 from i3l.layouts import Layouts
 from i3l.ticks import Tick
 
@@ -102,7 +102,11 @@ def on_window_new(layouts: Layouts, state: State):
         if not layouts.exists_for(context.workspace.name) or context.workspace_sequence is None:
             logger.debug('  [ipc] window new event - no workspace layout')
             return
-        if not is_layout_container(e.container):
+        if state.rebuild_action.last_container_window_recreated == e.container.window:
+            state.rebuild_action.last_container_recreated = None
+            if is_floating_container(e.container):
+                context.exec(f'[con_id={e.container.id}] floating disable')
+        elif not is_layout_container(e.container):
             logger.debug('  [ipc] window new event - not a layout container')
             return
         context.workspace_sequence.set_order(e.container)
@@ -114,6 +118,19 @@ def on_window_new(layouts: Layouts, state: State):
         state.handle_rebuild(context, e.container)
 
     return _on_window_new
+
+
+def on_window_floating(layouts: Layouts, state: State):
+
+    def _on_window_floating(i3l: Connection, e: WindowEvent):
+        logger.debug(f'[ipc] window floating event - container:{e.container.id}:{e.container.window}')
+        if is_floating_container(e.container):
+            state.rebuild_action.container_id_to_focus = e.container.id
+            on_window_close(layouts, state)(i3l, e)
+        else:
+            on_window_new(layouts, state)(i3l, e)
+
+    return _on_window_floating
 
 
 def on_window_focus(layouts: Layouts, state: State):

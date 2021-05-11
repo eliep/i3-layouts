@@ -105,6 +105,9 @@ def on_window_new(layouts: Layouts, state: State):
         if not is_layout_container(e.container):
             logger.debug('  [ipc] window new event - not a layout container')
             return
+        if len(context.containers) == 0:
+            logger.debug('  [ipc] window new event - no container to handle')
+            return
         context.workspace_sequence.set_order(e.container)
 
         logger.debug('  [ipc] window new event - update layout')

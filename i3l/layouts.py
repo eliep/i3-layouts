@@ -97,7 +97,6 @@ class Stack(Layout):
     def _update(self, context: Context):
         if len(context.containers) == 2:
             context.exec(f'[con_id="{context.focused.id}"] move {self.second_axe_position.value}')
-            context.exec(f'[con_id="{context.focused.id}"] move {self.second_axe_position.value}')
             size = context.workspace_width(1 - self.main_ratio) \
                 if self._resize_direction() == ResizeDirection.WIDTH else context.workspace_height(1 - self.main_ratio)
             context.exec(f'resize set {self._resize_direction().value} {size}')

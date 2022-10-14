@@ -13,7 +13,7 @@ setuptools.setup(
     author='eliep',
     author_email='eprudhomme@gmail.com',
     license='MIT',
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(exclude=['test']),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
